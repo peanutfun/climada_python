@@ -28,6 +28,7 @@ from .save import *
 
 ureg = UnitRegistry()
 
+
 class log_level:
     """Context manager that sets all loggers with names starting with
     name_prefix (default is "") to a given specified level.
@@ -50,7 +51,7 @@ class log_level:
             name: (logger, logger.level)
             for name, logger in logging.root.manager.loggerDict.items()
             if isinstance(logger, logging.Logger) and name.startswith(name_prefix)
-            }
+        }
         if name_prefix == "":
             self.loggers[""] = (logging.getLogger(), logging.getLogger().level)
 

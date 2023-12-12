@@ -20,11 +20,11 @@ module containing functions to support various select methods.
 """
 
 
-
 import logging
 import numpy as np
 
 LOGGER = logging.getLogger(__name__)
+
 
 def get_attributes_with_matching_dimension(obj, dims):
     """
@@ -48,7 +48,6 @@ def get_attributes_with_matching_dimension(obj, dims):
 
     list_of_attrs = []
     for attr, value in obj.__dict__.items():
-
         if isinstance(value, list):
             try:
                 value = np.array(value)

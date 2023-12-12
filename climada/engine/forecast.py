@@ -139,7 +139,7 @@ class Forecast:
         exposure: Exposures,
         impact_funcs: ImpactFuncSet,
         haz_model: str = "NWP",
-        exposure_name: Optional[str] = None
+        exposure_name: Optional[str] = None,
     ):
         """Initialization with hazard, exposure and vulnerability.
 
@@ -307,8 +307,9 @@ class Forecast:
         if self.hazard:
             self.exposure.assign_centroids(self.hazard[0], overwrite=force_reassign)
         for ind_i, haz_i in enumerate(self.hazard):
-            self._impact[ind_i] = ImpactCalc(self.exposure, self.vulnerability, haz_i)\
-                                  .impact(save_mat=True, assign_centroids=False)
+            self._impact[ind_i] = ImpactCalc(
+                self.exposure, self.vulnerability, haz_i
+            ).impact(save_mat=True, assign_centroids=False)
 
     def plot_imp_map(
         self,
@@ -322,7 +323,7 @@ class Forecast:
         figsize=(9, 13),
         adapt_fontsize=True,
     ):
-        """ plot a map of the impacts
+        """plot a map of the impacts
 
         Parameters
         ----------
@@ -377,7 +378,9 @@ class Forecast:
             "run_start": (
                 run_datetime.strftime("%d.%m.%Y %HUTC +") + lead_time_str + "d"
             ),
-            "explain_text": "mean building damage caused by wind" if explain_str is None else explain_str,
+            "explain_text": "mean building damage caused by wind"
+            if explain_str is None
+            else explain_str,
             "model_text": "CLIMADA IMPACT",
         }
         fig, axes = self._plot_imp_map(
@@ -538,7 +541,7 @@ class Forecast:
         close_fig=False,
         figsize=(9, 8),
     ):
-        """ plot histogram of the forecasted impacts all ensemble members
+        """plot histogram of the forecasted impacts all ensemble members
 
         Parameters
         ----------
@@ -617,7 +620,7 @@ class Forecast:
         axes.xaxis.set_ticks(x_ticks)
         axes.xaxis.set_ticklabels(x_ticklabels)
         plt.xticks(rotation=15, horizontalalignment="right")
-        plt.xlim([(10 ** -0.25) * bins[0], (10 ** 0.25) * bins[-1]])
+        plt.xlim([(10**-0.25) * bins[0], (10**0.25) * bins[-1]])
 
         lead_time_str = "{:.0f}".format(
             self.lead_time(run_datetime).days
@@ -628,7 +631,9 @@ class Forecast:
             "run_start": (
                 run_datetime.strftime("%d.%m.%Y %HUTC +") + lead_time_str + "d"
             ),
-            "explain_text": ("total building damage") if explain_str is None else explain_str,
+            "explain_text": ("total building damage")
+            if explain_str is None
+            else explain_str,
             "model_text": "CLIMADA IMPACT",
         }
         title_position = {
@@ -672,7 +677,8 @@ class Forecast:
             0.85,
             "mean impact:\n "
             + self._number_to_str(self._impact[haz_ind].at_event.mean())
-            + ' ' + self._impact[haz_ind].unit,
+            + " "
+            + self._impact[haz_ind].unit,
             horizontalalignment="center",
             verticalalignment="center",
             transform=axes.transAxes,
@@ -1101,7 +1107,9 @@ class Forecast:
                 decision_dict_functions[aggregation] = np.mean
             else:
                 raise ValueError(
-                    "Parameter " + aggregation + " of "
+                    "Parameter "
+                    + aggregation
+                    + " of "
                     + "Forecast.plot_warn_map() must eiter be "
                     + "a float between [0..1], which "
                     + "specifys a quantile. or 'sum' or 'mean'."

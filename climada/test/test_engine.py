@@ -78,7 +78,6 @@ def haz_dem(x_haz=1, haz=None):
 
 
 def make_input_vars():
-
     exp = exp_dem
     exp_distr = {
         "x_exp": sp.stats.uniform(0.8, 2),
@@ -113,7 +112,6 @@ def ent_fut_dem():
 
 
 def make_costben_iv():
-
     entdem = ent_dem()
     ent_iv = InputVar.ent(
         impf_set_list=[entdem.impact_funcs],
