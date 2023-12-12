@@ -19,7 +19,7 @@ with CLIMADA. If not, see <https://www.gnu.org/licenses/>.
 Define TC wind hazard (TropCyclone class).
 """
 
-__all__ = ['TropCyclone']
+__all__ = ["TropCyclone"]
 
 import copy
 import datetime as dt
@@ -46,7 +46,7 @@ import climada.util.plot as u_plot
 
 LOGGER = logging.getLogger(__name__)
 
-HAZ_TYPE = 'TC'
+HAZ_TYPE = "TC"
 """Hazard type acronym for Tropical Cyclone"""
 
 DEF_MAX_DIST_EYE_KM = 300
@@ -59,7 +59,7 @@ DEF_INTENSITY_THRES = 17.5
 DEF_MAX_MEMORY_GB = 8
 """Default value of the memory limit (in GB) for windfield computations (in each thread)."""
 
-MODEL_VANG = {'H08': 0, 'H1980': 1, 'H10': 2, 'ER11': 3}
+MODEL_VANG = {"H08": 0, "H1980": 1, "H10": 2, "ER11": 3}
 """Enumerate different symmetric wind field models."""
 
 RHO_AIR = 1.15
@@ -83,6 +83,7 @@ MBAR_TO_PA = (1.0 * ureg.millibar).to(ureg.pascal).magnitude
 
 V_ANG_EARTH = 7.29e-5
 """Earth angular velocity (in radians per second)"""
+
 
 class TropCyclone(Hazard):
     """
@@ -115,10 +116,11 @@ class TropCyclone(Hazard):
         matrix of shape (npositions, ncentroids * 2) that can be reshaped to a full ndarray of
         shape (npositions, ncentroids, 2).
     """
+
     intensity_thres = DEF_INTENSITY_THRES
     """intensity threshold for storage in m/s"""
 
-    vars_opt = Hazard.vars_opt.union({'category'})
+    vars_opt = Hazard.vars_opt.union({"category"})
     """Name of the variables that aren't need to compute the impact."""
 
     def __init__(
@@ -157,7 +159,7 @@ class TropCyclone(Hazard):
         **kwargs : Hazard properties, optional
             All other keyword arguments are passed to the Hazard constructor.
         """
-        kwargs.setdefault('haz_type', HAZ_TYPE)
+        kwargs.setdefault("haz_type", HAZ_TYPE)
         Hazard.__init__(self, **kwargs)
         self.category = category if category is not None else np.array([], int)
         self.basin = basin if basin is not None else []
@@ -165,13 +167,15 @@ class TropCyclone(Hazard):
 
     def set_from_tracks(self, *args, **kwargs):
         """This function is deprecated, use TropCyclone.from_tracks instead."""
-        LOGGER.warning("The use of TropCyclone.set_from_tracks is deprecated."
-                       "Use TropCyclone.from_tracks instead.")
+        LOGGER.warning(
+            "The use of TropCyclone.set_from_tracks is deprecated."
+            "Use TropCyclone.from_tracks instead."
+        )
         if "intensity_thres" not in kwargs:
             # some users modify the threshold attribute before calling `set_from_tracks`
             kwargs["intensity_thres"] = self.intensity_thres
-        if self.pool is not None and 'pool' not in kwargs:
-            kwargs['pool'] = self.pool
+        if self.pool is not None and "pool" not in kwargs:
+            kwargs["pool"] = self.pool
         self.__dict__ = TropCyclone.from_tracks(*args, **kwargs).__dict__
 
     @classmethod
@@ -180,7 +184,7 @@ class TropCyclone(Hazard):
         tracks: TCTracks,
         centroids: Optional[Centroids] = None,
         pool: Optional[pathos.pools.ProcessPool] = None,
-        model: str = 'H08',
+        model: str = "H08",
         ignore_distance_to_coast: bool = False,
         store_windfields: bool = False,
         metric: str = "equirect",
@@ -275,8 +279,10 @@ class TropCyclone(Hazard):
             # Select centroids which are inside max_dist_inland_km and lat <= max_latitude
             if not centroids.dist_coast.size:
                 centroids.set_dist_coast()
-            coastal_idx = ((centroids.dist_coast <= max_dist_inland_km * 1000)
-                           & (np.abs(centroids.lat) <= max_latitude)).nonzero()[0]
+            coastal_idx = (
+                (centroids.dist_coast <= max_dist_inland_km * 1000)
+                & (np.abs(centroids.lat) <= max_latitude)
+            ).nonzero()[0]
 
         # Filter early with a larger threshold, but inaccurate (lat/lon) distances.
         # Later, there will be another filtering step with more accurate distances in km.
@@ -285,21 +291,31 @@ class TropCyclone(Hazard):
         )
 
         # Restrict to coastal centroids within reach of any of the tracks
-        t_lon_min, t_lat_min, t_lon_max, t_lat_max = tracks.get_bounds(deg_buffer=max_dist_eye_deg)
+        t_lon_min, t_lat_min, t_lon_max, t_lat_max = tracks.get_bounds(
+            deg_buffer=max_dist_eye_deg
+        )
         t_mid_lon = 0.5 * (t_lon_min + t_lon_max)
         coastal_centroids = centroids.coord[coastal_idx]
         u_coord.lon_normalize(coastal_centroids[:, 1], center=t_mid_lon)
-        coastal_idx = coastal_idx[((t_lon_min <= coastal_centroids[:, 1])
-                                   & (coastal_centroids[:, 1] <= t_lon_max)
-                                   & (t_lat_min <= coastal_centroids[:, 0])
-                                   & (coastal_centroids[:, 0] <= t_lat_max))]
+        coastal_idx = coastal_idx[
+            (
+                (t_lon_min <= coastal_centroids[:, 1])
+                & (coastal_centroids[:, 1] <= t_lon_max)
+                & (t_lat_min <= coastal_centroids[:, 0])
+                & (coastal_centroids[:, 0] <= t_lat_max)
+            )
+        ]
 
-        LOGGER.info('Mapping %s tracks to %s coastal centroids.', str(tracks.size),
-                    str(coastal_idx.size))
+        LOGGER.info(
+            "Mapping %s tracks to %s coastal centroids.",
+            str(tracks.size),
+            str(coastal_idx.size),
+        )
         if pool:
             chunksize = max(min(num_tracks // pool.ncpus, 1000), 1)
             tc_haz_list = pool.map(
-                cls.from_single_track, tracks.data,
+                cls.from_single_track,
+                tracks.data,
                 itertools.repeat(centroids, num_tracks),
                 itertools.repeat(coastal_idx, num_tracks),
                 itertools.repeat(model, num_tracks),
@@ -308,7 +324,8 @@ class TropCyclone(Hazard):
                 itertools.repeat(intensity_thres, num_tracks),
                 itertools.repeat(max_dist_eye_km, num_tracks),
                 itertools.repeat(max_memory_gb, num_tracks),
-                chunksize=chunksize)
+                chunksize=chunksize,
+            )
         else:
             last_perc = 0
             tc_haz_list = []
@@ -318,27 +335,30 @@ class TropCyclone(Hazard):
                     LOGGER.info("Progress: %d%%", perc)
                     last_perc = perc
                 tc_haz_list.append(
-                    cls.from_single_track(track, centroids, coastal_idx,
-                                          model=model, store_windfields=store_windfields,
-                                          metric=metric, intensity_thres=intensity_thres,
-                                          max_dist_eye_km=max_dist_eye_km,
-                                          max_memory_gb=max_memory_gb))
+                    cls.from_single_track(
+                        track,
+                        centroids,
+                        coastal_idx,
+                        model=model,
+                        store_windfields=store_windfields,
+                        metric=metric,
+                        intensity_thres=intensity_thres,
+                        max_dist_eye_km=max_dist_eye_km,
+                        max_memory_gb=max_memory_gb,
+                    )
+                )
             if last_perc < 100:
                 LOGGER.info("Progress: 100%")
 
-        LOGGER.debug('Concatenate events.')
+        LOGGER.debug("Concatenate events.")
         haz = cls.concat(tc_haz_list)
         haz.pool = pool
         haz.intensity_thres = intensity_thres
-        LOGGER.debug('Compute frequency.')
+        LOGGER.debug("Compute frequency.")
         haz.frequency_from_tracks(tracks.data)
         return haz
 
-    def apply_climate_scenario_knu(
-        self,
-        ref_year: int = 2050,
-        rcp_scenario: int = 45
-    ):
+    def apply_climate_scenario_knu(self, ref_year: int = 2050, rcp_scenario: int = 45):
         """
         From current TC hazard instance, return new hazard set with
         future events for a given RCP scenario and year based on the
@@ -373,14 +393,16 @@ class TropCyclone(Hazard):
             modified.
         """
         chg_int_freq = get_knutson_criterion()
-        scale_rcp_year  = calc_scale_knutson(ref_year, rcp_scenario)
+        scale_rcp_year = calc_scale_knutson(ref_year, rcp_scenario)
         haz_cc = self._apply_knutson_criterion(chg_int_freq, scale_rcp_year)
         return haz_cc
 
     def set_climate_scenario_knu(self, *args, **kwargs):
         """This function is deprecated, use TropCyclone.apply_climate_scenario_knu instead."""
-        LOGGER.warning("The use of TropCyclone.set_climate_scenario_knu is deprecated."
-                       "Use TropCyclone.apply_climate_scenario_knu instead.")
+        LOGGER.warning(
+            "The use of TropCyclone.set_climate_scenario_knu is deprecated."
+            "Use TropCyclone.apply_climate_scenario_knu instead."
+        )
         return self.apply_climate_scenario_knu(*args, **kwargs)
 
     @classmethod
@@ -393,7 +415,7 @@ class TropCyclone(Hazard):
         writer: animation = animation.PillowWriter(bitrate=500),
         figsize: Tuple[float, float] = (9, 13),
         adapt_fontsize: bool = True,
-        **kwargs
+        **kwargs,
     ):
         """
         Generate video of TC wind fields node by node and returns its
@@ -431,7 +453,7 @@ class TropCyclone(Hazard):
         # initialization
         track = tracks.get_track(track_name)
         if not track:
-            raise ValueError(f'{track_name} not found in track data.')
+            raise ValueError(f"{track_name} not found in track data.")
         idx_plt = np.argwhere(
             (track.lon.values < centroids.total_bounds[2] + 1)
             & (centroids.total_bounds[0] - 1 < track.lon.values)
@@ -440,46 +462,53 @@ class TropCyclone(Hazard):
         ).reshape(-1)
 
         tc_list = []
-        tr_coord = {'lat': [], 'lon': []}
+        tr_coord = {"lat": [], "lon": []}
         for node in range(idx_plt.size - 2):
             tr_piece = track.sel(
-                time=slice(track.time.values[idx_plt[node]],
-                           track.time.values[idx_plt[node + 2]]))
-            tr_piece.attrs['n_nodes'] = 2  # plot only one node
+                time=slice(
+                    track.time.values[idx_plt[node]],
+                    track.time.values[idx_plt[node + 2]],
+                )
+            )
+            tr_piece.attrs["n_nodes"] = 2  # plot only one node
             tr_sel = TCTracks()
             tr_sel.append(tr_piece)
-            tr_coord['lat'].append(tr_sel.data[0].lat.values[:-1])
-            tr_coord['lon'].append(tr_sel.data[0].lon.values[:-1])
+            tr_coord["lat"].append(tr_sel.data[0].lat.values[:-1])
+            tr_coord["lon"].append(tr_sel.data[0].lon.values[:-1])
 
             tc_tmp = cls.from_tracks(tr_sel, centroids=centroids)
             tc_tmp.event_name = [
-                track.name + ' ' + time.strftime(
+                track.name
+                + " "
+                + time.strftime(
                     "%d %h %Y %H:%M",
-                    time.gmtime(tr_sel.data[0].time[1].values.astype(int)
-                                / 1000000000)
+                    time.gmtime(tr_sel.data[0].time[1].values.astype(int) / 1000000000),
                 )
             ]
             tc_list.append(tc_tmp)
 
-        if 'cmap' not in kwargs:
-            kwargs['cmap'] = 'Greys'
-        if 'vmin' not in kwargs:
-            kwargs['vmin'] = np.array([tc_.intensity.min() for tc_ in tc_list]).min()
-        if 'vmax' not in kwargs:
-            kwargs['vmax'] = np.array([tc_.intensity.max() for tc_ in tc_list]).max()
+        if "cmap" not in kwargs:
+            kwargs["cmap"] = "Greys"
+        if "vmin" not in kwargs:
+            kwargs["vmin"] = np.array([tc_.intensity.min() for tc_ in tc_list]).min()
+        if "vmax" not in kwargs:
+            kwargs["vmax"] = np.array([tc_.intensity.max() for tc_ in tc_list]).max()
 
         def run(node):
             tc_list[node].plot_intensity(1, axis=axis, **kwargs)
-            axis.plot(tr_coord['lon'][node], tr_coord['lat'][node], 'k')
+            axis.plot(tr_coord["lon"][node], tr_coord["lat"][node], "k")
             axis.set_title(tc_list[node].event_name[0])
             pbar.update()
 
         if file_name:
-            LOGGER.info('Generating video %s', file_name)
-            fig, axis, _fontsize = u_plot.make_map(figsize=figsize, adapt_fontsize=adapt_fontsize)
+            LOGGER.info("Generating video %s", file_name)
+            fig, axis, _fontsize = u_plot.make_map(
+                figsize=figsize, adapt_fontsize=adapt_fontsize
+            )
             pbar = tqdm(total=idx_plt.size - 2)
-            ani = animation.FuncAnimation(fig, run, frames=idx_plt.size - 2,
-                                          interval=500, blit=False)
+            ani = animation.FuncAnimation(
+                fig, run, frames=idx_plt.size - 2, interval=500, blit=False
+            )
             fig.tight_layout()
             ani.save(file_name, writer=writer)
             pbar.close()
@@ -508,7 +537,7 @@ class TropCyclone(Hazard):
         track: xr.Dataset,
         centroids: Centroids,
         coastal_idx: np.ndarray,
-        model: str = 'H08',
+        model: str = "H08",
         store_windfields: bool = False,
         metric: str = "equirect",
         intensity_thres: float = DEF_INTENSITY_THRES,
@@ -571,31 +600,32 @@ class TropCyclone(Hazard):
         new_haz.intensity = intensity_sparse
         if store_windfields:
             new_haz.windfields = [windfields_sparse]
-        new_haz.units = 'm/s'
+        new_haz.units = "m/s"
         new_haz.centroids = centroids
         new_haz.event_id = np.array([1])
         new_haz.frequency = np.array([1])
         new_haz.event_name = [track.sid]
         new_haz.fraction = sparse.csr_matrix(new_haz.intensity.shape)
         # store first day of track as date
-        new_haz.date = np.array([
-            dt.datetime(track.time.dt.year.values[0],
-                        track.time.dt.month.values[0],
-                        track.time.dt.day.values[0]).toordinal()
-        ])
+        new_haz.date = np.array(
+            [
+                dt.datetime(
+                    track.time.dt.year.values[0],
+                    track.time.dt.month.values[0],
+                    track.time.dt.day.values[0],
+                ).toordinal()
+            ]
+        )
         new_haz.orig = np.array([track.orig_event_flag])
         new_haz.category = np.array([track.category])
         # users that pickle TCTracks objects might still have data with the legacy basin attribute,
         # so we have to deal with it here
-        new_haz.basin = [track.basin if isinstance(track.basin, str)
-                         else str(track.basin.values[0])]
+        new_haz.basin = [
+            track.basin if isinstance(track.basin, str) else str(track.basin.values[0])
+        ]
         return new_haz
 
-    def _apply_knutson_criterion(
-        self,
-        chg_int_freq: List,
-        scaling_rcp_year: float
-    ):
+    def _apply_knutson_criterion(self, chg_int_freq: List, scaling_rcp_year: float):
         """
         Apply changes to intensities and cumulative frequencies.
 
@@ -617,54 +647,55 @@ class TropCyclone(Hazard):
 
         # Criterion per basin
         for basin in np.unique(tc_cc.basin):
-
             bas_sel = np.array(tc_cc.basin) == basin
 
             # Apply intensity change
-            inten_chg = [chg
-                         for chg in chg_int_freq
-                         if (chg['variable'] == 'intensity' and
-                             chg['basin'] == basin)
-                         ]
+            inten_chg = [
+                chg
+                for chg in chg_int_freq
+                if (chg["variable"] == "intensity" and chg["basin"] == basin)
+            ]
             for chg in inten_chg:
-                sel_cat_chg = np.isin(tc_cc.category, chg['category']) & bas_sel
-                inten_scaling = 1 + (chg['change'] - 1) * scaling_rcp_year
+                sel_cat_chg = np.isin(tc_cc.category, chg["category"]) & bas_sel
+                inten_scaling = 1 + (chg["change"] - 1) * scaling_rcp_year
                 tc_cc.intensity = sparse.diags(
                     np.where(sel_cat_chg, inten_scaling, 1)
-                    ).dot(tc_cc.intensity)
+                ).dot(tc_cc.intensity)
 
             # Apply frequency change
-            freq_chg = [chg
-                        for chg in chg_int_freq
-                        if (chg['variable'] == 'frequency' and
-                            chg['basin'] == basin)
-                        ]
-            freq_chg.sort(reverse=False, key=lambda x: len(x['category']))
+            freq_chg = [
+                chg
+                for chg in chg_int_freq
+                if (chg["variable"] == "frequency" and chg["basin"] == basin)
+            ]
+            freq_chg.sort(reverse=False, key=lambda x: len(x["category"]))
 
             # Scale frequencies by category
             cat_larger_list = []
             for chg in freq_chg:
-                cat_chg_list = [cat
-                                for cat in chg['category']
-                                if cat not in cat_larger_list
-                                ]
+                cat_chg_list = [
+                    cat for cat in chg["category"] if cat not in cat_larger_list
+                ]
                 sel_cat_chg = np.isin(tc_cc.category, cat_chg_list) & bas_sel
                 if sel_cat_chg.any():
-                    freq_scaling = 1 + (chg['change'] - 1) * scaling_rcp_year
+                    freq_scaling = 1 + (chg["change"] - 1) * scaling_rcp_year
                     tc_cc.frequency[sel_cat_chg] *= freq_scaling
                 cat_larger_list += cat_chg_list
 
         if (tc_cc.frequency < 0).any():
-            raise ValueError("The application of the given climate scenario"
-                             "resulted in at least one negative frequency.")
+            raise ValueError(
+                "The application of the given climate scenario"
+                "resulted in at least one negative frequency."
+            )
 
         return tc_cc
+
 
 def _compute_windfields_sparse(
     track: xr.Dataset,
     centroids: Centroids,
     coastal_idx: np.ndarray,
-    model: str = 'H08',
+    model: str = "H08",
     store_windfields: bool = False,
     metric: str = "equirect",
     intensity_thres: float = DEF_INTENSITY_THRES,
@@ -718,7 +749,7 @@ def _compute_windfields_sparse(
     try:
         mod_id = MODEL_VANG[model]
     except KeyError as err:
-        raise ValueError(f'Model not implemented: {model}.') from err
+        raise ValueError(f"Model not implemented: {model}.") from err
 
     ncentroids = centroids.coord.shape[0]
     coastal_centr = centroids.coord[coastal_idx]
@@ -729,7 +760,8 @@ def _compute_windfields_sparse(
     # start with the assumption that no centroids are within reach
     windfields_sparse = (
         sparse.csr_matrix(([], ([], [])), shape=windfields_shape)
-        if store_windfields else None
+        if store_windfields
+        else None
     )
     intensity_sparse = sparse.csr_matrix(([], ([], [])), shape=intensity_shape)
 
@@ -749,7 +781,8 @@ def _compute_windfields_sparse(
     # centroids that are considered by a factor larger than 30).
     max_dist_eye_lat = max_dist_eye_km / u_const.ONE_LAT_KM
     max_dist_eye_lon = max_dist_eye_km / (
-        u_const.ONE_LAT_KM * np.cos(np.radians(np.abs(coastal_centr[:, 0]) + max_dist_eye_lat))
+        u_const.ONE_LAT_KM
+        * np.cos(np.radians(np.abs(coastal_centr[:, 0]) + max_dist_eye_lat))
     )
     coastal_idx = coastal_idx[
         (t_lat.min() - coastal_centr[:, 0] <= max_dist_eye_lat)
@@ -762,7 +795,11 @@ def _compute_windfields_sparse(
     # After the previous filtering step, finding and storing the reachable centroids is not a
     # memory bottle neck and can be done before chunking.
     track_centr_msk = get_close_centroids(
-        t_lat, t_lon, coastal_centr, max_dist_eye_km, metric=metric,
+        t_lat,
+        t_lon,
+        coastal_centr,
+        max_dist_eye_km,
+        metric=metric,
     )
     coastal_idx = coastal_idx[track_centr_msk.any(axis=0)]
     coastal_centr = centroids.coord[coastal_idx]
@@ -793,7 +830,11 @@ def _compute_windfields_sparse(
         )
 
     windfields, reachable_centr_idx = _compute_windfields(
-        si_track, coastal_centr, mod_id, metric=metric, max_dist_eye_km=max_dist_eye_km,
+        si_track,
+        coastal_centr,
+        mod_id,
+        metric=metric,
+        max_dist_eye_km=max_dist_eye_km,
     )
     reachable_coastal_centr_idx = coastal_idx[reachable_centr_idx]
     npositions = windfields.shape[0]
@@ -802,7 +843,8 @@ def _compute_windfields_sparse(
     intensity[intensity < intensity_thres] = 0
     intensity_sparse = sparse.csr_matrix(
         (intensity, reachable_coastal_centr_idx, [0, intensity.size]),
-        shape=intensity_shape)
+        shape=intensity_shape,
+    )
     intensity_sparse.eliminate_zeros()
 
     windfields_sparse = None
@@ -813,11 +855,13 @@ def _compute_windfields_sparse(
         indices[:, :, 1] = 2 * reachable_coastal_centr_idx[None] + 1
         indices = indices.ravel()
         indptr = np.arange(npositions + 1) * n_reachable_coastal_centr * 2
-        windfields_sparse = sparse.csr_matrix((windfields.ravel(), indices, indptr),
-                                              shape=windfields_shape)
+        windfields_sparse = sparse.csr_matrix(
+            (windfields.ravel(), indices, indptr), shape=windfields_shape
+        )
         windfields_sparse.eliminate_zeros()
 
     return intensity_sparse, windfields_sparse
+
 
 def _compute_windfields_sparse_chunked(
     track_centr_msk: np.ndarray,
@@ -868,8 +912,10 @@ def _compute_windfields_sparse_chunked(
     for prev_chunk_end, chunk_end in zip(split_pos[:-1], split_pos[1:]):
         chunk_start = max(0, prev_chunk_end - 1)
         inten, win = _compute_windfields_sparse(
-            track.isel(time=slice(chunk_start, chunk_end)), *args,
-            max_memory_gb=max_memory_gb, **kwargs,
+            track.isel(time=slice(chunk_start, chunk_end)),
+            *args,
+            max_memory_gb=max_memory_gb,
+            **kwargs,
         )
         intensity.append(inten)
         windfields.append(win)
@@ -880,6 +926,7 @@ def _compute_windfields_sparse_chunked(
         windfields = [windfields[0]] + [win[1:, :] for win in windfields[1:]]
         windfields = sparse.vstack(windfields, format="csr")
     return intensity, windfields
+
 
 def _compute_windfields(
     si_track: xr.Dataset,
@@ -931,9 +978,15 @@ def _compute_windfields(
 
     # compute distances (in m) and vectors to all centroids
     [d_centr], [v_centr_normed] = u_coord.dist_approx(
-        si_track["lat"].values[None], si_track["lon"].values[None],
-        centroids[None, :, 0], centroids[None, :, 1],
-        log=True, normalize=False, method=metric, units="m")
+        si_track["lat"].values[None],
+        si_track["lon"].values[None],
+        centroids[None, :, 0],
+        centroids[None, :, 1],
+        log=True,
+        normalize=False,
+        method=metric,
+        units="m",
+    )
 
     # exclude centroids that are too far from or too close to the eye
     close_centr_msk = (d_centr <= max_dist_eye_km * KM_TO_M) & (d_centr > 1)
@@ -952,12 +1005,18 @@ def _compute_windfields(
 
     # derive (absolute) angular velocity from parametric wind profile
     v_ang_norm = compute_angular_windspeeds(
-        si_track, d_centr, close_centr_msk, model, cyclostrophic=False,
+        si_track,
+        d_centr,
+        close_centr_msk,
+        model,
+        cyclostrophic=False,
     )
 
     # vectorial angular velocity
     windfields = (
-        si_track.attrs["latsign"] * np.array([1.0, -1.0])[..., :] * v_centr_normed[:, :, ::-1]
+        si_track.attrs["latsign"]
+        * np.array([1.0, -1.0])[..., :]
+        * v_centr_normed[:, :, ::-1]
     )
     windfields[close_centr_msk] *= v_ang_norm[close_centr_msk, None]
 
@@ -972,7 +1031,8 @@ def _compute_windfields(
     t_rad_bc = np.broadcast_arrays(si_track["rad"].values[:, None], d_centr)[0]
     v_trans_corr = np.zeros_like(d_centr)
     v_trans_corr[close_centr_msk] = np.fmin(
-        1, t_rad_bc[close_centr_msk] / d_centr[close_centr_msk])
+        1, t_rad_bc[close_centr_msk] / d_centr[close_centr_msk]
+    )
 
     # add angular and corrected translational velocity vectors
     windfields[1:] += si_track["vtrans"].values[1:, None, :] * v_trans_corr[1:, :, None]
@@ -980,6 +1040,7 @@ def _compute_windfields(
     windfields[0, :, :] = 0
     [reachable_centr_idx] = track_centr_msk.nonzero()
     return windfields, reachable_centr_idx
+
 
 def tctrack_to_si(
     track: xr.Dataset,
@@ -1035,7 +1096,7 @@ def tctrack_to_si(
         except Exception as ex:
             raise ValueError(
                 f"The {long_name}_unit '{unit}' in the provided track is not supported."
-             ) from ex
+            ) from ex
         si_track[var_name] = track[long_name] * conv_factor
 
     # normalize longitudinal coordinates
@@ -1049,28 +1110,33 @@ def tctrack_to_si(
     # extrapolate radius of max wind from pressure if not given
     si_track["rad"] = track["radius_max_wind"].copy()
     si_track["rad"].values[:] = estimate_rmw(
-        si_track["rad"].values, si_track["cen"].values / MBAR_TO_PA,
+        si_track["rad"].values,
+        si_track["cen"].values / MBAR_TO_PA,
     )
     si_track["rad"] *= NM_TO_KM * KM_TO_M
 
-    hemisphere = 'N'
+    hemisphere = "N"
     if np.count_nonzero(si_track["lat"] < 0) > np.count_nonzero(si_track["lat"] > 0):
-        hemisphere = 'S'
-    si_track.attrs["latsign"] = 1.0 if hemisphere == 'N' else -1.0
+        hemisphere = "S"
+    si_track.attrs["latsign"] = 1.0 if hemisphere == "N" else -1.0
 
     # add translational speed of track at every node (in m/s)
     _vtrans(si_track, metric=metric)
 
     # convert surface winds to gradient winds without translational influence
     si_track["vgrad"] = (
-        np.fmax(0, si_track["vmax"] - si_track["vtrans_norm"]) / GRADIENT_LEVEL_TO_SURFACE_WINDS
+        np.fmax(0, si_track["vmax"] - si_track["vtrans_norm"])
+        / GRADIENT_LEVEL_TO_SURFACE_WINDS
     )
 
     si_track["cp"] = ("time", _coriolis_parameter(si_track["lat"].values))
 
     return si_track
 
-def compute_angular_windspeeds(si_track, d_centr, close_centr_msk, model, cyclostrophic=False):
+
+def compute_angular_windspeeds(
+    si_track, d_centr, close_centr_msk, model, cyclostrophic=False
+):
     """Compute (absolute) angular wind speeds according to a parametric wind profile
 
     Parameters
@@ -1092,30 +1158,36 @@ def compute_angular_windspeeds(si_track, d_centr, close_centr_msk, model, cyclos
     -------
     ndarray of shape (npositions, ncentroids)
     """
-    if model == MODEL_VANG['H1980']:
+    if model == MODEL_VANG["H1980"]:
         _B_holland_1980(si_track)
-    elif model in [MODEL_VANG['H08'], MODEL_VANG['H10']]:
+    elif model in [MODEL_VANG["H08"], MODEL_VANG["H10"]]:
         _bs_holland_2008(si_track)
 
-    if model in [MODEL_VANG['H1980'], MODEL_VANG['H08']]:
+    if model in [MODEL_VANG["H1980"], MODEL_VANG["H08"]]:
         result = _stat_holland_1980(
-            si_track, d_centr, close_centr_msk, cyclostrophic=cyclostrophic,
+            si_track,
+            d_centr,
+            close_centr_msk,
+            cyclostrophic=cyclostrophic,
         )
-        if model == MODEL_VANG['H1980']:
+        if model == MODEL_VANG["H1980"]:
             result *= GRADIENT_LEVEL_TO_SURFACE_WINDS
-    elif model == MODEL_VANG['H10']:
+    elif model == MODEL_VANG["H10"]:
         # this model is always cyclostrophic
         _v_max_s_holland_2008(si_track)
         hol_x = _x_holland_2010(si_track, d_centr, close_centr_msk)
         result = _stat_holland_2010(si_track, d_centr, close_centr_msk, hol_x)
-    elif model == MODEL_VANG['ER11']:
-        result = _stat_er_2011(si_track, d_centr, close_centr_msk, cyclostrophic=cyclostrophic)
+    elif model == MODEL_VANG["ER11"]:
+        result = _stat_er_2011(
+            si_track, d_centr, close_centr_msk, cyclostrophic=cyclostrophic
+        )
     else:
         raise NotImplementedError
 
     result[0, :] *= 0
 
     return result
+
 
 def get_close_centroids(
     t_lat: np.ndarray,
@@ -1158,16 +1230,21 @@ def get_close_centroids(
     ncentroids = centroids.shape[0]
     centr_lat, centr_lon = centroids[:, 0], centroids[:, 1]
     buffer_lat = buffer_km / u_const.ONE_LAT_KM
-    buffer_lon = buffer_km / (u_const.ONE_LAT_KM * np.cos(np.radians(
-        np.fmin(89.999, np.abs(t_lat[:, None]) + buffer_lat)
-    )))
+    buffer_lon = buffer_km / (
+        u_const.ONE_LAT_KM
+        * np.cos(np.radians(np.fmin(89.999, np.abs(t_lat[:, None]) + buffer_lat)))
+    )
     # check for each track position which centroids are within rectangular buffers
     [idx_rects] = (
-        (t_lat[:, None] - buffer_lat <= centr_lat[None])
-        & (t_lat[:, None] + buffer_lat >= centr_lat[None])
-        & (t_lon[:, None] - buffer_lon <= centr_lon[None])
-        & (t_lon[:, None] + buffer_lon >= centr_lon[None])
-    ).any(axis=0).nonzero()
+        (
+            (t_lat[:, None] - buffer_lat <= centr_lat[None])
+            & (t_lat[:, None] + buffer_lat >= centr_lat[None])
+            & (t_lon[:, None] - buffer_lon <= centr_lon[None])
+            & (t_lon[:, None] + buffer_lon >= centr_lon[None])
+        )
+        .any(axis=0)
+        .nonzero()
+    )
 
     # We do the distance computation for chunks of the track since computing the distance requires
     # npositions*ncentroids*8*3 Bytes of memory. For example, Hurricane FAITH's life time was more
@@ -1175,19 +1252,31 @@ def get_close_centroids(
     # FAITH. With a chunk size of 10, this figure is down to 360 MB. The final mask will require
     # 1.0 GB of memory.
     chunk_size = 10
-    chunks = np.split(np.arange(t_lat.size), np.arange(chunk_size, t_lat.size, chunk_size))
-    dist_mask_rects = np.concatenate([
-        (
-            u_coord.dist_approx(
-                t_lat[None, chunk], t_lon[None, chunk],
-                centr_lat[None, idx_rects], centr_lon[None, idx_rects],
-                normalize=False, method=metric, units="km",
-            )[0] <= buffer_km
-        ) for chunk in chunks
-    ], axis=0)
+    chunks = np.split(
+        np.arange(t_lat.size), np.arange(chunk_size, t_lat.size, chunk_size)
+    )
+    dist_mask_rects = np.concatenate(
+        [
+            (
+                u_coord.dist_approx(
+                    t_lat[None, chunk],
+                    t_lon[None, chunk],
+                    centr_lat[None, idx_rects],
+                    centr_lon[None, idx_rects],
+                    normalize=False,
+                    method=metric,
+                    units="km",
+                )[0]
+                <= buffer_km
+            )
+            for chunk in chunks
+        ],
+        axis=0,
+    )
     mask = np.zeros((npositions, ncentroids), dtype=bool)
     mask[:, idx_rects] = dist_mask_rects
     return mask
+
 
 def _vtrans(si_track: xr.Dataset, metric: str = "equirect"):
     """Translational vector and velocity (in m/s) at each track node.
@@ -1216,9 +1305,16 @@ def _vtrans(si_track: xr.Dataset, metric: str = "equirect"):
     si_track["component"] = ("component", ["v", "u"])
 
     t_lat, t_lon = si_track["lat"].values, si_track["lon"].values
-    norm, vec = u_coord.dist_approx(t_lat[:-1, None], t_lon[:-1, None],
-                                    t_lat[1:, None], t_lon[1:, None],
-                                    log=True, normalize=False, method=metric, units="m")
+    norm, vec = u_coord.dist_approx(
+        t_lat[:-1, None],
+        t_lon[:-1, None],
+        t_lat[1:, None],
+        t_lon[1:, None],
+        log=True,
+        normalize=False,
+        method=metric,
+        units="m",
+    )
     si_track["vtrans"].values[1:, :] = vec[:, 0, 0] / si_track["tstep"].values[1:, None]
     si_track["vtrans_norm"].values[1:] = norm[:, 0, 0] / si_track["tstep"].values[1:]
 
@@ -1227,6 +1323,7 @@ def _vtrans(si_track: xr.Dataset, metric: str = "equirect"):
     fact = 30 * KN_TO_MS / si_track["vtrans_norm"].values[msk]
     si_track["vtrans"].values[msk, :] *= fact[:, None]
     si_track["vtrans_norm"].values[msk] *= fact
+
 
 def _coriolis_parameter(lat: np.ndarray) -> np.ndarray:
     """Compute the Coriolis parameter from latitude.
@@ -1242,6 +1339,7 @@ def _coriolis_parameter(lat: np.ndarray) -> np.ndarray:
         Coriolis parameter.
     """
     return 2 * V_ANG_EARTH * np.sin(np.radians(np.abs(lat)))
+
 
 def _bs_holland_2008(si_track: xr.Dataset):
     """Holland's 2008 b-value estimate for sustained surface winds.
@@ -1292,14 +1390,20 @@ def _bs_holland_2008(si_track: xr.Dataset):
     # and time steps are in hours instead of seconds, but translational wind speed is still
     # expected to be in m/s.
     pdelta = (si_track["env"] - si_track["cen"]) / MBAR_TO_PA
-    hol_xx = 0.6 * (1. - pdelta / 215)
+    hol_xx = 0.6 * (1.0 - pdelta / 215)
     si_track["hol_b"] = (
-        -4.4e-5 * pdelta**2 + 0.01 * pdelta
-        + 0.03 * (si_track["cen"] - prev_cen) / si_track["tstep"] * (H_TO_S / MBAR_TO_PA)
+        -4.4e-5 * pdelta**2
+        + 0.01 * pdelta
+        + 0.03
+        * (si_track["cen"] - prev_cen)
+        / si_track["tstep"]
+        * (H_TO_S / MBAR_TO_PA)
         - 0.014 * abs(si_track["lat"])
-        + 0.15 * si_track["vtrans_norm"]**hol_xx + 1.0
+        + 0.15 * si_track["vtrans_norm"] ** hol_xx
+        + 1.0
     )
     si_track["hol_b"] = np.clip(si_track["hol_b"], 1, 2.5)
+
 
 def _v_max_s_holland_2008(si_track: xr.Dataset):
     """Compute maximum surface winds from pressure according to Holland 2008.
@@ -1330,6 +1434,7 @@ def _v_max_s_holland_2008(si_track: xr.Dataset):
     pdelta = si_track["env"] - si_track["cen"]
     si_track["vmax"] = np.sqrt(si_track["hol_b"] / (RHO_AIR * np.exp(1)) * pdelta)
 
+
 def _B_holland_1980(si_track: xr.Dataset):  # pylint: disable=invalid-name
     """Holland's 1980 B-value computation for gradient-level winds.
 
@@ -1357,8 +1462,11 @@ def _B_holland_1980(si_track: xr.Dataset):  # pylint: disable=invalid-name
         a new data variable "hol_b".
     """
     pdelta = si_track["env"] - si_track["cen"]
-    si_track["hol_b"] = si_track["vgrad"]**2 * np.exp(1) * RHO_AIR / np.fmax(np.spacing(1), pdelta)
+    si_track["hol_b"] = (
+        si_track["vgrad"] ** 2 * np.exp(1) * RHO_AIR / np.fmax(np.spacing(1), pdelta)
+    )
     si_track["hol_b"] = np.clip(si_track["hol_b"], 1, 2.5)
+
 
 def _x_holland_2010(
     si_track: xr.Dataset,
@@ -1407,10 +1515,14 @@ def _x_holland_2010(
     """
     hol_x = np.zeros_like(d_centr)
     r_max, v_max_s, hol_b, d_centr, v_n, r_n = [
-        ar[close_centr] for ar in np.broadcast_arrays(
-            si_track["rad"].values[:, None], si_track["vmax"].values[:, None],
-            si_track["hol_b"].values[:, None], d_centr,
-            np.atleast_1d(v_n)[:, None], np.atleast_1d(r_n_km)[:, None],
+        ar[close_centr]
+        for ar in np.broadcast_arrays(
+            si_track["rad"].values[:, None],
+            si_track["vmax"].values[:, None],
+            si_track["hol_b"].values[:, None],
+            d_centr,
+            np.atleast_1d(v_n)[:, None],
+            np.atleast_1d(r_n_km)[:, None],
         )
     ]
 
@@ -1418,12 +1530,14 @@ def _x_holland_2010(
     r_n *= KM_TO_M
 
     # compute peripheral exponent from second measurement
-    r_max_norm = (r_max / r_n)**hol_b
+    r_max_norm = (r_max / r_n) ** hol_b
     x_n = np.log(v_n / v_max_s) / np.log(r_max_norm * np.exp(1 - r_max_norm))
 
     # linearly interpolate between max exponent and peripheral exponent
     x_max = 0.5
-    hol_x[close_centr] = x_max + np.fmax(0, d_centr - r_max) * (x_n - x_max) / (r_n - r_max)
+    hol_x[close_centr] = x_max + np.fmax(0, d_centr - r_max) * (x_n - x_max) / (
+        r_n - r_max
+    )
 
     # Negative hol_x values appear when v_max_s is very close to or even lower than v_n (which
     # should never happen in theory). In those cases, wind speeds might decrease outside of the eye
@@ -1432,6 +1546,7 @@ def _x_holland_2010(
     hol_x[close_centr] = np.fmax(hol_x[close_centr], 0.0)
 
     return hol_x
+
 
 def _stat_holland_2010(
     si_track: xr.Dataset,
@@ -1471,21 +1586,26 @@ def _stat_holland_2010(
     """
     v_ang = np.zeros_like(d_centr)
     d_centr, v_max_s, r_max, hol_b, hol_x = [
-        ar[close_centr] for ar in np.broadcast_arrays(
-            d_centr, si_track["vmax"].values[:, None], si_track["rad"].values[:, None],
-            si_track["hol_b"].values[:, None], hol_x,
+        ar[close_centr]
+        for ar in np.broadcast_arrays(
+            d_centr,
+            si_track["vmax"].values[:, None],
+            si_track["rad"].values[:, None],
+            si_track["hol_b"].values[:, None],
+            hol_x,
         )
     ]
 
-    r_max_norm = (r_max / np.fmax(1, d_centr))**hol_b
-    v_ang[close_centr] = v_max_s * (r_max_norm * np.exp(1 - r_max_norm))**hol_x
+    r_max_norm = (r_max / np.fmax(1, d_centr)) ** hol_b
+    v_ang[close_centr] = v_max_s * (r_max_norm * np.exp(1 - r_max_norm)) ** hol_x
     return v_ang
+
 
 def _stat_holland_1980(
     si_track: xr.Dataset,
     d_centr: np.ndarray,
     close_centr: np.ndarray,
-    cyclostrophic: bool = False
+    cyclostrophic: bool = False,
 ) -> np.ndarray:
     """Symmetric and static wind fields (in m/s) according to Holland 1980.
 
@@ -1527,10 +1647,14 @@ def _stat_holland_1980(
     """
     v_ang = np.zeros_like(d_centr)
     d_centr, r_max, hol_b, penv, pcen, coriolis_p = [
-        ar[close_centr] for ar in np.broadcast_arrays(
-            d_centr, si_track["rad"].values[:, None], si_track["hol_b"].values[:, None],
-            si_track["env"].values[:, None], si_track["cen"].values[:, None],
-            si_track["cp"].values[:, None]
+        ar[close_centr]
+        for ar in np.broadcast_arrays(
+            d_centr,
+            si_track["rad"].values[:, None],
+            si_track["hol_b"].values[:, None],
+            si_track["env"].values[:, None],
+            si_track["cen"].values[:, None],
+            si_track["cp"].values[:, None],
         )
     ]
 
@@ -1538,10 +1662,14 @@ def _stat_holland_1980(
     if not cyclostrophic:
         r_coriolis = 0.5 * d_centr * coriolis_p
 
-    r_max_norm = (r_max / np.fmax(1, d_centr))**hol_b
-    sqrt_term = hol_b / RHO_AIR * r_max_norm * (penv - pcen) * np.exp(-r_max_norm) + r_coriolis**2
+    r_max_norm = (r_max / np.fmax(1, d_centr)) ** hol_b
+    sqrt_term = (
+        hol_b / RHO_AIR * r_max_norm * (penv - pcen) * np.exp(-r_max_norm)
+        + r_coriolis**2
+    )
     v_ang[close_centr] = np.sqrt(np.fmax(0, sqrt_term)) - r_coriolis
     return v_ang
+
 
 def _stat_er_2011(
     si_track: xr.Dataset,
@@ -1588,8 +1716,10 @@ def _stat_er_2011(
     """
     v_ang = np.zeros_like(d_centr)
     d_centr, r_max, v_max, coriolis_p = [
-        ar[close_centr] for ar in np.broadcast_arrays(
-            d_centr, si_track["rad"].values[:, None],
+        ar[close_centr]
+        for ar in np.broadcast_arrays(
+            d_centr,
+            si_track["rad"].values[:, None],
             si_track["vmax"].values[:, None],
             si_track["cp"].values[:, None],
         )
@@ -1603,7 +1733,7 @@ def _stat_er_2011(
         momentum_max += 0.5 * coriolis_p * r_max**2
 
     # rescale the momentum using formula (36) in Emanuel and Rotunno 2011 with Ck == Cd
-    r_max_norm = (d_centr / r_max)**2
+    r_max_norm = (d_centr / r_max) ** 2
     momentum = momentum_max * 2 * r_max_norm / (1 + r_max_norm)
 
     # extract the velocity from the rescaled momentum through division by r

@@ -369,9 +369,7 @@ class TestReadDefaultNetCDF(unittest.TestCase):
             ds = ds.expand_dims(time=[np.datetime64("2022-01-01")])
             hazard = Hazard.from_xarray_raster(ds, "", "")
             self._assert_default_types(hazard)
-            np.testing.assert_array_equal(
-                hazard.event_name, ["2022-01-01"]
-            )
+            np.testing.assert_array_equal(hazard.event_name, ["2022-01-01"])
             np.testing.assert_array_equal(
                 hazard.date, [dt.datetime(2022, 1, 1).toordinal()]
             )

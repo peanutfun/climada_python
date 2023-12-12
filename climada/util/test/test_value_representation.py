@@ -37,9 +37,7 @@ class TestDigits(unittest.TestCase):
         nbs_out = [1.23, 12300, -12300, -12.3]
         for nb_in, nb_out in zip(nbs_in, nbs_out):
             self.assertEqual(sig_dig(nb_in, n_sig_dig), nb_out)
-        self.assertTrue(
-            np.array_equal(sig_dig_list(nbs_in, n_sig_dig), nbs_out)
-            )
+        self.assertTrue(np.array_equal(sig_dig_list(nbs_in, n_sig_dig), nbs_out))
 
     def test_sig_dig_fail(self):
         """Test sig_dig function"""
@@ -48,16 +46,21 @@ class TestDigits(unittest.TestCase):
         nbs_out = [1.23, 12300, -12300, -12.3]
         for nb_in, nb_out in zip(nbs_in, nbs_out):
             self.assertNotEqual(sig_dig(nb_in, n_sig_dig_wrong), nb_out)
-        self.assertFalse(
-            np.array_equal(sig_dig_list(nbs_in, n_sig_dig_wrong), nbs_out)
-            )
+        self.assertFalse(np.array_equal(sig_dig_list(nbs_in, n_sig_dig_wrong), nbs_out))
 
     def test_value_to_monetary_unit_pass(self):
         """Test money_unit function"""
         nbs_in = [-1e10, -1e6, -1e2, 0, 1e3, 1e7, 1e11]
         nbs_out = [-10, -1, -100, 0, 1, 10, 100]
-        names_out = [ABBREV[1e9], ABBREV[1e6], ABBREV[1], ABBREV[1],
-                 ABBREV[1e3], ABBREV[1e6], ABBREV[1e9]]
+        names_out = [
+            ABBREV[1e9],
+            ABBREV[1e6],
+            ABBREV[1],
+            ABBREV[1],
+            ABBREV[1e3],
+            ABBREV[1e6],
+            ABBREV[1e9],
+        ]
         for j, (nb_in, nb_out) in enumerate(zip(nbs_in, nbs_out)):
             money, names = value_to_monetary_unit(nb_in)
             self.assertEqual(money[0], nb_out)
@@ -67,8 +70,15 @@ class TestDigits(unittest.TestCase):
         """Test money_unit function"""
         nbs_in = [-math.inf, 0, 1e-10, 1e-5, math.inf]
         nbs_out = [-math.inf, 0, 1e-10, 1e-5, math.inf]
-        names_out = [ABBREV[1], ABBREV[1], ABBREV[1], ABBREV[1],
-                 ABBREV[1], ABBREV[1], ABBREV[1]]
+        names_out = [
+            ABBREV[1],
+            ABBREV[1],
+            ABBREV[1],
+            ABBREV[1],
+            ABBREV[1],
+            ABBREV[1],
+            ABBREV[1],
+        ]
         for j, (nb_in, nb_out) in enumerate(zip(nbs_in, nbs_out)):
             money, names = value_to_monetary_unit(nb_in)
             self.assertEqual(money[0], nb_out)
@@ -79,16 +89,29 @@ class TestDigits(unittest.TestCase):
         nb_in = math.nan
         money, name = value_to_monetary_unit(nb_in)
         self.assertTrue(math.isnan(money[0]))
-        self.assertEqual(name, '')
-
+        self.assertEqual(name, "")
 
     def test_value_to_monetary_unit_sigdig_pass(self):
         """Test money_unit function with significant digits"""
-        nbs_in = [-1e10*1.2345, -1e6*1.2345, -1e2*1.2345, 0, 1e3*1.2345,
-                  1e7*1.2345, 1e11*1.2345]
+        nbs_in = [
+            -1e10 * 1.2345,
+            -1e6 * 1.2345,
+            -1e2 * 1.2345,
+            0,
+            1e3 * 1.2345,
+            1e7 * 1.2345,
+            1e11 * 1.2345,
+        ]
         nbs_out = [-12.3, -1.23, -123, 0, 1.23, 12.3, 123]
-        names_out = [ABBREV[1e9], ABBREV[1e6], ABBREV[1], ABBREV[1],
-                 ABBREV[1e3], ABBREV[1e6], ABBREV[1e9]]
+        names_out = [
+            ABBREV[1e9],
+            ABBREV[1e6],
+            ABBREV[1],
+            ABBREV[1],
+            ABBREV[1e3],
+            ABBREV[1e6],
+            ABBREV[1e9],
+        ]
         for j, (nb_in, nb_out) in enumerate(zip(nbs_in, nbs_out)):
             money, names = value_to_monetary_unit(nb_in, n_sig_dig=3)
             self.assertEqual(money[0], nb_out)
@@ -96,13 +119,17 @@ class TestDigits(unittest.TestCase):
 
     def test_value_to_monetary_unit_list_pass(self):
         """Test money_unit function with list of numbers"""
-        nbs_in = [-1e10*1.2345, -1e9*1.2345]
+        nbs_in = [-1e10 * 1.2345, -1e9 * 1.2345]
         nbs_out = [-12.3, -1.23]
         name_out = ABBREV[1e9]
         money, name = value_to_monetary_unit(nbs_in, n_sig_dig=3)
         self.assertTrue(np.array_equal(money, nbs_out))
         self.assertEqual(name, name_out)
-        nbs_in = [1e4*1.2345, 1e3*1.2345, 1e2*1.2345,]
+        nbs_in = [
+            1e4 * 1.2345,
+            1e3 * 1.2345,
+            1e2 * 1.2345,
+        ]
         nbs_out = [12.3, 1.23, 0.123]
         name_out = ABBREV[1e3]
         money, name = value_to_monetary_unit(nbs_in, n_sig_dig=3)
@@ -111,13 +138,13 @@ class TestDigits(unittest.TestCase):
 
     def test_value_to_monetary_unit_list_0inf_pass(self):
         """Test money_unit function with list of numbers"""
-        nbs_in = [-1e10*1.2345, -1e9*1.2345, 0, math.inf]
+        nbs_in = [-1e10 * 1.2345, -1e9 * 1.2345, 0, math.inf]
         nbs_out = [-12.3, -1.23, 0, math.inf]
         name_out = ABBREV[1e9]
         money, name = value_to_monetary_unit(nbs_in, n_sig_dig=3)
         self.assertTrue(np.array_equal(money, nbs_out))
         self.assertEqual(name, name_out)
-        nbs_in = [1e4*1.2345, 1e3*1.2345, 1e2*1.2345, 0, math.inf]
+        nbs_in = [1e4 * 1.2345, 1e3 * 1.2345, 1e2 * 1.2345, 0, math.inf]
         nbs_out = [12.3, 1.23, 0.123, 0, math.inf]
         name_out = ABBREV[1e3]
         money, name = value_to_monetary_unit(nbs_in, n_sig_dig=3)
@@ -126,7 +153,7 @@ class TestDigits(unittest.TestCase):
 
     def test_value_to_monetary_unit_list_nan_pass(self):
         """Test money_unit function with list of numbers"""
-        nbs_in = [-1e10*1.2345, -1e9*1.2345, math.nan]
+        nbs_in = [-1e10 * 1.2345, -1e9 * 1.2345, math.nan]
         nbs_out = [-12.3, -1.23, math.nan]
         name_out = ABBREV[1e9]
         money, name = value_to_monetary_unit(nbs_in, n_sig_dig=3)

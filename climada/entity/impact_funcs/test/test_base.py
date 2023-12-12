@@ -24,6 +24,7 @@ import numpy as np
 
 from climada.entity.impact_funcs.base import ImpactFunc
 
+
 class TestInterpolation(unittest.TestCase):
     """Impact function interpolation test"""
 
@@ -39,26 +40,26 @@ class TestInterpolation(unittest.TestCase):
     def test_from_step(self):
         """Check default impact function: step function"""
         inten = (0, 5, 10)
-        imp_fun = ImpactFunc.from_step_impf(
-            intensity=inten, haz_type='TC', impf_id=2)
+        imp_fun = ImpactFunc.from_step_impf(intensity=inten, haz_type="TC", impf_id=2)
         self.assertTrue(np.array_equal(imp_fun.paa, np.ones(4)))
         self.assertTrue(np.array_equal(imp_fun.mdd, np.array([0, 0, 1, 1])))
         self.assertTrue(np.array_equal(imp_fun.intensity, np.array([0, 5, 5, 10])))
-        self.assertEqual(imp_fun.haz_type, 'TC')
+        self.assertEqual(imp_fun.haz_type, "TC")
         self.assertEqual(imp_fun.id, 2)
-
 
     def test_from_sigmoid(self):
         """Check default impact function: sigmoid function"""
         inten = (0, 100, 5)
         imp_fun = ImpactFunc.from_sigmoid_impf(
-            inten, L=1.0, k=2., x0=50., haz_type='RF', impf_id=2)
+            inten, L=1.0, k=2.0, x0=50.0, haz_type="RF", impf_id=2
+        )
         self.assertTrue(np.array_equal(imp_fun.paa, np.ones(20)))
         self.assertEqual(imp_fun.mdd[10], 0.5)
         self.assertEqual(imp_fun.mdd[-1], 1.0)
         self.assertTrue(np.array_equal(imp_fun.intensity, np.arange(0, 100, 5)))
-        self.assertEqual(imp_fun.haz_type, 'RF')
+        self.assertEqual(imp_fun.haz_type, "RF")
         self.assertEqual(imp_fun.id, 2)
+
 
 # Execute Tests
 if __name__ == "__main__":
