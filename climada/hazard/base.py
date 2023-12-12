@@ -267,6 +267,18 @@ class Hazard:
             "frequency_unit": DEF_FREQ_UNIT,
         }.get(attribute)
 
+    def clear(self):
+        """Reinitialize attributes (except the process Pool)."""
+        for var_name, var_val in self.__dict__.items():
+            if isinstance(var_val, np.ndarray) and var_val.ndim == 1:
+                setattr(self, var_name, np.array([], dtype=var_val.dtype))
+            elif isinstance(var_val, sparse.csr_matrix):
+                setattr(self, var_name, sparse.csr_matrix(np.empty((0, 0))))
+            elif not isinstance(var_val, Pool):
+                setattr(
+                    self, var_name, self.get_default(var_name) or var_val.__class__()
+                )
+
     def check(self):
         """Check dimension of attributes.
 
@@ -359,7 +371,7 @@ class Hazard:
         if haz_type is not None:
             hazard_kwargs["haz_type"] = haz_type
 
-        centroids, meta = Centroids.from_raster_file(
+        centroids = Centroids.from_raster_file(
             files_intensity[0],
             src_crs=src_crs,
             window=window,
@@ -369,15 +381,12 @@ class Hazard:
             width=width,
             height=height,
             resampling=resampling,
-            return_meta=True,
         )
-
         if pool:
             chunksize = max(min(len(files_intensity) // pool.ncpus, 1000), 1)
             inten_list = pool.map(
                 _values_from_raster_files,
                 [[f] for f in files_intensity],
-                itertools.repeat(meta),
                 itertools.repeat(band),
                 itertools.repeat(src_crs),
                 itertools.repeat(window),
@@ -394,7 +403,6 @@ class Hazard:
                 fract_list = pool.map(
                     _values_from_raster_files,
                     [[f] for f in files_fraction],
-                    itertools.repeat(meta),
                     itertools.repeat(band),
                     itertools.repeat(src_crs),
                     itertools.repeat(window),
@@ -408,9 +416,8 @@ class Hazard:
                 )
                 fraction = sparse.vstack(fract_list, format="csr")
         else:
-            intensity = _values_from_raster_files(
+            intensity = centroids.values_from_raster_files(
                 files_intensity,
-                meta=meta,
                 band=band,
                 src_crs=src_crs,
                 window=window,
@@ -422,9 +429,8 @@ class Hazard:
                 resampling=resampling,
             )
             if files_fraction is not None:
-                fraction = _values_from_raster_files(
+                fraction = centroids.values_from_raster_files(
                     files_fraction,
-                    meta=meta,
                     band=band,
                     src_crs=src_crs,
                     window=window,
@@ -816,9 +822,9 @@ class Hazard:
         )
 
         # Transform coordinates into centroids
-        centroids = Centroids(
-            latitude=data[coords["latitude"]].values,
-            longitude=data[coords["longitude"]].values,
+        centroids = Centroids.from_lat_lon(
+            data[coords["latitude"]].values,
+            data[coords["longitude"]].values,
             crs=crs,
         )
 
@@ -1166,7 +1172,100 @@ class Hazard:
 
         return kwargs
 
-    def reproject_vector(self, dst_crs):
+    def reproject_raster(
+        self,
+        dst_crs=False,
+        transform=None,
+        width=None,
+        height=None,
+        resampl_inten=Resampling.nearest,
+        resampl_fract=Resampling.nearest,
+    ):
+        """Change current raster data to other CRS and/or transformation
+
+        Parameters
+        ----------
+        dst_crs: crs, optional
+            reproject to given crs
+        transform: rasterio.Affine
+            affine transformation to apply
+        wdith: float
+            number of lons for transform
+        height: float
+            number of lats for transform
+        resampl_inten: rasterio.warp,.Resampling optional
+            resampling function used for reprojection to dst_crs for intensity
+        resampl_fract: rasterio.warp,.Resampling optional
+            resampling function used for reprojection to dst_crs for fraction
+        """
+        if not self.centroids.meta:
+            raise ValueError("Raster not set")
+        if not dst_crs:
+            dst_crs = self.centroids.meta["crs"]
+        if transform and not width or transform and not height:
+            raise ValueError("Provide width and height to given transformation.")
+        if not transform:
+            transform, width, height = calculate_default_transform(
+                self.centroids.meta["crs"],
+                dst_crs,
+                self.centroids.meta["width"],
+                self.centroids.meta["height"],
+                self.centroids.meta["transform"][2],
+                (
+                    self.centroids.meta["transform"][5]
+                    + self.centroids.meta["height"]
+                    * self.centroids.meta["transform"][4]
+                ),
+                (
+                    self.centroids.meta["transform"][2]
+                    + self.centroids.meta["width"] * self.centroids.meta["transform"][0]
+                ),
+                self.centroids.meta["transform"][5],
+            )
+        dst_meta = self.centroids.meta.copy()
+        dst_meta.update(
+            {"crs": dst_crs, "transform": transform, "width": width, "height": height}
+        )
+        intensity = np.zeros((self.size, dst_meta["height"], dst_meta["width"]))
+        fraction = np.zeros((self.size, dst_meta["height"], dst_meta["width"]))
+        kwargs = {
+            "src_transform": self.centroids.meta["transform"],
+            "src_crs": self.centroids.meta["crs"],
+            "dst_transform": transform,
+            "dst_crs": dst_crs,
+            "resampling": resampl_inten,
+        }
+        for idx_ev, inten in enumerate(self.intensity.toarray()):
+            reproject(
+                source=np.asarray(
+                    inten.reshape(
+                        (self.centroids.meta["height"], self.centroids.meta["width"])
+                    )
+                ),
+                destination=intensity[idx_ev, :, :],
+                **kwargs,
+            )
+        kwargs.update(resampling=resampl_fract)
+        for idx_ev, fract in enumerate(self.fraction.toarray()):
+            reproject(
+                source=np.asarray(
+                    fract.reshape(
+                        (self.centroids.meta["height"], self.centroids.meta["width"])
+                    )
+                ),
+                destination=fraction[idx_ev, :, :],
+                **kwargs,
+            )
+        self.centroids.meta = dst_meta
+        self.intensity = sparse.csr_matrix(
+            intensity.reshape(self.size, dst_meta["height"] * dst_meta["width"])
+        )
+        self.fraction = sparse.csr_matrix(
+            fraction.reshape(self.size, dst_meta["height"] * dst_meta["width"])
+        )
+        self.check()
+
+    def reproject_vector(self, dst_crs, scheduler=None):
         """Change current point data to a a given projection
 
         Parameters
@@ -1174,7 +1273,50 @@ class Hazard:
         dst_crs : crs
             reproject to given crs
         """
-        self.centroids.gdf.to_crs(dst_crs, inplace=True)
+        self.centroids.set_geometry_points(scheduler)
+        self.centroids.geometry = self.centroids.geometry.to_crs(dst_crs)
+        self.centroids.lat = self.centroids.geometry[:].y
+        self.centroids.lon = self.centroids.geometry[:].x
+        self.check()
+
+    def raster_to_vector(self):
+        """Change current raster to points (center of the pixels)"""
+        self.centroids.set_meta_to_lat_lon()
+        self.centroids.meta = dict()
+        self.check()
+
+    def vector_to_raster(self, scheduler=None):
+        """Change current point data to a raster with same resolution
+
+        Parameters
+        ----------
+        scheduler : str, optional
+            used for dask map_partitions. “threads”,
+            “synchronous” or “processes”
+        """
+        points_df = gpd.GeoDataFrame()
+        points_df["latitude"] = self.centroids.lat
+        points_df["longitude"] = self.centroids.lon
+        val_names = ["val" + str(i_ev) for i_ev in range(2 * self.size)]
+        for i_ev, inten_name in enumerate(val_names):
+            if i_ev < self.size:
+                points_df[inten_name] = np.asarray(
+                    self.intensity[i_ev, :].toarray()
+                ).reshape(-1)
+            else:
+                points_df[inten_name] = np.asarray(
+                    self.fraction[i_ev - self.size, :].toarray()
+                ).reshape(-1)
+        raster, meta = u_coord.points_to_raster(
+            points_df, val_names, crs=self.centroids.geometry.crs, scheduler=scheduler
+        )
+        self.intensity = sparse.csr_matrix(
+            raster[: self.size, :, :].reshape(self.size, -1)
+        )
+        self.fraction = sparse.csr_matrix(
+            raster[self.size :, :, :].reshape(self.size, -1)
+        )
+        self.centroids = Centroids(meta=meta)
         self.check()
 
     def read_mat(self, *args, **kwargs):
@@ -1371,6 +1513,7 @@ class Hazard:
             LOGGER.info("No hazard centroids within extent and region")
             return None
 
+        sel_cen = sel_cen.nonzero()[0]
         for var_name, var_val in self.__dict__.items():
             if (
                 isinstance(var_val, np.ndarray)
@@ -1604,6 +1747,7 @@ class Hazard:
         ------
             ValueError
         """
+        self._set_coords_centroids()
         col_label = f"Intensity ({self.units})"
         crs_epsg, _ = u_plot.get_transformation(self.centroids.geometry.crs)
         if event is not None:
@@ -1660,6 +1804,7 @@ class Hazard:
         ------
             ValueError
         """
+        self._set_coords_centroids()
         col_label = "Fraction"
         if event is not None:
             if isinstance(event, str):
@@ -1853,40 +1998,27 @@ class Hazard:
         elif variable == "fraction":
             var_to_write = self.fraction
         else:
-            raise ValueError(
-                f"The variable {variable} is not valid. Please use 'intensity' or 'fraction'."
-            )
-
-        meta = self.centroids.get_meta(resolution=output_resolution)
-        meta.update(driver="GTiff", dtype=rasterio.float32, count=self.size)
-        res = meta["transform"][0]  # resolution from lon coordinates
-
-        if meta["height"] * meta["width"] == self.centroids.shape[0]:
-            # If centroids already in raster format
-            u_coord.write_raster(file_name, var_to_write.toarray(), meta)
-        else:
-            geometry = self.centroids.gdf.geometry.buffer(
-                distance=res / 2, resolution=1, cap_style=3
-            )
-            # resolution=1, cap_style=3: squared buffers
-            # https://shapely.readthedocs.io/en/latest/manual.html#object.buffer
-            with rasterio.open(file_name, "w", **meta) as dst:
+            pixel_geom = self.centroids.calc_pixels_polygons()
+            profile = self.centroids.meta
+            profile.update(driver="GTiff", dtype=rasterio.float32, count=self.size)
+            with rasterio.open(file_name, "w", **profile) as dst:
                 LOGGER.info("Writing %s", file_name)
-                for i_ev in range(self.size):
-                    raster = rasterio.features.rasterize(
-                        (
-                            (geom, value)
-                            for geom, value in zip(
-                                geometry, var_to_write[i_ev].toarray().flatten()
+                for i_ev in range(variable.shape[0]):
+                    raster = rasterize(
+                        [
+                            (x, val)
+                            for (x, val) in zip(
+                                pixel_geom,
+                                np.array(variable[i_ev, :].toarray()).reshape(-1),
                             )
-                        ),
-                        out_shape=(meta["height"], meta["width"]),
-                        transform=meta["transform"],
+                        ],
+                        out_shape=(profile["height"], profile["width"]),
+                        transform=profile["transform"],
                         fill=0,
                         all_touched=True,
-                        dtype=meta["dtype"],
+                        dtype=profile["dtype"],
                     )
-                    dst.write(raster.astype(meta["dtype"]), i_ev + 1)
+                    dst.write(raster.astype(profile["dtype"]), i_ev + 1)
 
     def write_hdf5(self, file_name, todense=False):
         """Write hazard in hdf5 format.
@@ -1904,14 +2036,7 @@ class Hazard:
             str_dt = h5py.special_dtype(vlen=str)
             for var_name, var_val in self.__dict__.items():
                 if var_name == "centroids":
-                    pass
-                elif var_name == "tag":
-                    hf_str = hf_data.create_dataset("haz_type", (1,), dtype=str_dt)
-                    hf_str[0] = var_val.haz_type
-                    hf_str = hf_data.create_dataset("file_name", (1,), dtype=str_dt)
-                    hf_str[0] = str(var_val.file_name)
-                    hf_str = hf_data.create_dataset("description", (1,), dtype=str_dt)
-                    hf_str[0] = str(var_val.description)
+                    self.centroids.write_hdf5(hf_data.create_group(var_name))
                 elif isinstance(var_val, sparse.csr_matrix):
                     if todense:
                         hf_data.create_dataset(var_name, data=var_val.toarray())
@@ -1981,16 +2106,8 @@ class Hazard:
                 if var_name not in hf_data.keys():
                     continue
                 if var_name == "centroids":
-                    continue
-                elif var_name == "tag":
-                    hazard_kwargs["haz_type"] = u_hdf5.to_string(
-                        hf_data.get("haz_type")[0]
-                    )
-                    hazard_kwargs["file_name"] = u_hdf5.to_string(
-                        hf_data.get("file_name")[0]
-                    )
-                    hazard_kwargs["description"] = u_hdf5.to_string(
-                        hf_data.get("description")[0]
+                    hazard_kwargs["centroids"] = Centroids.from_hdf5(
+                        hf_data.get(var_name)
                     )
                 elif isinstance(var_val, np.ndarray) and var_val.ndim == 1:
                     hazard_kwargs[var_name] = np.array(hf_data.get(var_name))
@@ -2142,7 +2259,9 @@ class Hazard:
             except IndexError as err:
                 raise ValueError(f"Wrong centroid id: {centr_idx}.") from err
             array_val = mat_var[:, centr_pos].toarray()
-            title = f"Centroid {centr_idx}: ({np.around(coord[centr_pos, 0],3)}, {np.around(coord[centr_pos, 1],3)})"
+            title = (
+                f"Centroid {centr_idx}: ({coord[centr_pos, 0]}, {coord[centr_pos, 1]})"
+            )
         elif centr_idx < 0:
             max_inten = np.asarray(np.sum(mat_var, axis=0)).reshape(-1)
             centr_pos = np.argpartition(max_inten, centr_idx)[centr_idx:]
@@ -2151,7 +2270,7 @@ class Hazard:
 
             title = (
                 f"{np.abs(centr_idx)}-largest Centroid. {centr_pos}:"
-                f" ({np.around(coord[centr_pos, 0], 3)}, {np.around(coord[centr_pos, 1], 3)})"
+                f" ({coord[centr_pos, 0]}, {coord[centr_pos, 1]})"
             )
         else:
             array_val = np.max(mat_var, axis=1).toarray()
@@ -2586,16 +2705,32 @@ class Hazard:
         haz_new_cent = copy.deepcopy(self)
         haz_new_cent.centroids = centroids
 
-        new_cent_idx = u_coord.match_coordinates(
-            self.centroids.coord, centroids.coord, threshold=threshold
-        )
-        if -1 in new_cent_idx:
-            raise ValueError(
-                "At least one hazard centroid is at a larger "
-                f"distance than the given threshold {threshold} "
-                "from the given centroids. Please choose a "
-                "larger threshold or enlarge the centroids"
+        # indices for mapping matrices onto common centroids
+        if centroids.meta:
+            new_cent_idx = u_coord.match_grid_points(
+                self.centroids.lon,
+                self.centroids.lat,
+                centroids.meta["width"],
+                centroids.meta["height"],
+                centroids.meta["transform"],
             )
+            if -1 in new_cent_idx:
+                raise ValueError(
+                    "At least one hazard centroid is out of"
+                    "the raster defined by centroids.meta."
+                    " Please choose a larger raster."
+                )
+        else:
+            new_cent_idx = u_coord.match_coordinates(
+                self.centroids.coord, centroids.coord, threshold=threshold
+            )
+            if -1 in new_cent_idx:
+                raise ValueError(
+                    "At least one hazard centroid is at a larger "
+                    f"distance than the given threshold {threshold} "
+                    "from the given centroids. Please choose a "
+                    "larger threshold or enlarge the centroids"
+                )
 
         if np.unique(new_cent_idx).size < new_cent_idx.size:
             raise ValueError(

@@ -574,7 +574,7 @@ class Exposures:
         --------
         Exposures
         """
-
+        exp = cls()
         meta, value = u_coord.read_raster(
             file_name,
             [band],
@@ -593,15 +593,14 @@ class Exposures:
         x_grid, y_grid = np.meshgrid(
             np.arange(ulx + xres / 2, lrx, xres), np.arange(uly + yres / 2, lry, yres)
         )
-        return cls(
-            {
-                "longitude": x_grid.flatten(),
-                "latitude": y_grid.flatten(),
-                "value": value.reshape(-1),
-            },
-            meta=meta,
-            crs=meta["crs"],
-        )
+
+        if exp.crs is None:
+            exp.set_crs()
+        exp.gdf["longitude"] = x_grid.flatten()
+        exp.gdf["latitude"] = y_grid.flatten()
+        exp.gdf["value"] = value.reshape(-1)
+        exp.meta = meta
+        return exp
 
     def plot_scatter(
         self,

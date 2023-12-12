@@ -618,7 +618,8 @@ class StormEurope(Hazard):
             lats, lons = np.array(
                 [np.repeat(lats, len(lons)), np.tile(lons, len(lats))]
             )
-        cent = Centroids(latitude=lats, longitude=lons)
+        cent = Centroids.from_lat_lon(lats, lons)
+        cent.set_area_pixel()
         cent.set_on_land()
 
         return cent
@@ -743,7 +744,7 @@ class StormEurope(Hazard):
         ssi = np.zeros(intensity.shape[0])
 
         if method == "dawkins":
-            area_c = area_pixel / 1000 / 1000 * sel_cen
+            area_c = cent.area_pixel / 1000 / 1000 * sel_cen
             for i, inten_i in enumerate(intensity):
                 ssi_i = inten_i.power(3).dot(area_c)
                 # matrix crossproduct (row x column vector)

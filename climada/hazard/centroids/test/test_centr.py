@@ -33,63 +33,7 @@ import climada.util.coordinates as u_coord
 from climada.entity import Exposures
 from rasterio import Affine
 
-
-class TestCentroidsData(unittest.TestCase):
-    def test_init(self):
-        # Creating Centroids with latitude and longitude arrays
-        lat = np.array([10.0, 20.0, 30.0])
-        lon = np.array([-10.0, -20.0, -30.0])
-        centroids = Centroids(latitude=lat, longitude=lon)
-
-        # Checking attributes
-        np.testing.assert_array_equal(centroids.lat, lat)
-        np.testing.assert_array_equal(centroids.lon, lon)
-        self.assertTrue(u_coord.equal_crs(centroids.crs, DEF_CRS))
-
-        # Creating Centroids with additional properties
-        region_id = np.array([1, 2, 3])
-        on_land = np.array([True, False, False])
-        centroids = Centroids(lat, lon, region_id=region_id, on_land=on_land)
-
-        # Checking additional attributes
-        np.testing.assert_array_equal(centroids.region_id, region_id)
-        np.testing.assert_array_equal(centroids.on_land, on_land)
-
-    def test_to_default_crs(self):
-        # Creating Centroids with non-default CRS
-        crs = "epsg:32632"
-        lat = np.array([-10, 0, 10])
-        lon = np.array([-170, -150, -130])
-        centroids = Centroids(latitude=lat, longitude=lon, crs=crs)
-
-        self.assertTrue(u_coord.equal_crs(centroids.crs, "epsg:32632"))
-
-        # Transforming to default CRS
-        centroids.to_default_crs()
-
-        # Checking CRS after transformation
-        self.assertTrue(u_coord.equal_crs(centroids.crs, DEF_CRS))
-
-    def test_to_crs(self):
-        # Creating Centroids with non-default CRS
-        crs = "epsg:4326"
-        lat = np.array([-10, 0, 10])
-        lon = np.array([-170, -150, -130])
-        centroids = Centroids(latitude=lat, longitude=lon, crs=crs)
-
-        # Transforming to another CRS
-        new_crs = "epsg:3857"
-        transformed_centroids = centroids.to_crs(new_crs)
-
-        # Checking CRS after transformation
-        self.assertTrue(u_coord.equal_crs(transformed_centroids.crs, new_crs))
-        self.assertTrue(u_coord.equal_crs(centroids.crs, crs))
-
-        # Checking coordinates after transformation
-        expected_lat = np.array([-1118889.974858, 0.0, 1118889.9748585])
-        expected_lon = np.array([-18924313.434857, -16697923.618991, -14471533.803126])
-        np.testing.assert_array_almost_equal(transformed_centroids.lat, expected_lat)
-        np.testing.assert_array_almost_equal(transformed_centroids.lon, expected_lon)
+HAZ_TEST_MAT = Path(hazard_test.__file__).parent / "data" / "atl_prob_no_name.mat"
 
 
 class TestCentroidsReader(unittest.TestCase):
@@ -107,22 +51,34 @@ class TestCentroidsReader(unittest.TestCase):
         self.assertEqual(centroids.coord[n_centroids - 1][0], -24.7)
         self.assertEqual(centroids.coord[n_centroids - 1][1], 33.88)
 
-    def test_from_geodataframe(self):
-        """Test that constructing a valid Centroids instance from gdf works."""
-        crs = DEF_CRS
-        lat = np.arange(170, 180)
-        lon = np.arange(-50, -40)
-        region_id = np.arange(1, 11)
-        extra = np.repeat(str("a"), 10)
+    def test_base_grid(self):
+        """Read new centroids using from_base_grid, then select by extent."""
+        centroids = Centroids.from_base_grid(land=True, res_as=150)
+        self.assertEqual(centroids.lat.size, 8858035)
+        self.assertTrue(np.all(np.diff(centroids.lat) <= 0))
 
-        gdf = gpd.GeoDataFrame(
-            {
-                "geometry": gpd.points_from_xy(lon, lat),
-                "region_id": region_id,
-                "extra": extra,
-            },
-            crs=crs,
-        )
+        count_sandwich = np.sum(centroids.region_id == 239)
+        self.assertEqual(count_sandwich, 321)
+
+        count_sgi = centroids.select(
+            reg_id=239, extent=(-39, -34.7, -55.5, -53.6)  # south georgia island
+        ).size
+        self.assertEqual(count_sgi, 296)
+
+        # test negative latitudinal orientation by testing that northern hemisphere (Russia)
+        # is listed before southern hemisphere (South Africa)
+        russia_max_idx = (centroids.region_id == 643).nonzero()[0].max()
+        safrica_min_idx = (centroids.region_id == 710).nonzero()[0].min()
+        self.assertTrue(russia_max_idx < safrica_min_idx)
+
+    def test_geodataframe(self):
+        """Test that constructing a valid Centroids instance from gdf works."""
+        gdf = gpd.GeoDataFrame(pd.read_excel(HAZ_TEMPLATE_XLS))
+        gdf.geometry = gpd.points_from_xy(gdf["longitude"], gdf["latitude"])
+        gdf["elevation"] = np.random.rand(gdf.geometry.size)
+        gdf["region_id"] = np.zeros(gdf.geometry.size)
+        gdf["region_id"][0] = np.NaN
+        gdf["geom"] = gdf.geometry  # this should have no effect on centroids
 
         centroids = Centroids.from_geodataframe(gdf)
 
@@ -215,15 +171,21 @@ class TestCentroidsReader(unittest.TestCase):
 
 
 class TestCentroidsWriter(unittest.TestCase):
-    def test_read_write_hdf5(self):
-        tmpfile = Path("test_write_hdf5.out.hdf5")
-        latitude = np.arange(0, 10)
-        longitude = np.arange(-10, 0)
-        crs = DEF_CRS
-        centroids_w = Centroids(latitude=latitude, longitude=longitude, crs=crs)
-        centroids_w.write_hdf5(tmpfile)
-        centroids_r = Centroids.from_hdf5(tmpfile)
-        self.assertTrue(centroids_w == centroids_r)
+    def test_write_hdf5(self):
+        tmpfile = "test_write_hdf5.out.hdf5"
+        xf_lat, xo_lon, d_lat, d_lon, n_lat, n_lon = 5, 6.5, -0.08, 0.12, 4, 5
+        centr = Centroids.from_pix_bounds(xf_lat, xo_lon, d_lat, d_lon, n_lat, n_lon)
+        with self.assertLogs("climada.hazard.centroids.centr", level="INFO") as cm:
+            centr.write_hdf5(tmpfile)
+        self.assertEqual(1, len(cm.output))
+        self.assertIn(f"Writing {tmpfile}", cm.output[0])
+        centr.meta["nodata"] = None
+        with self.assertLogs("climada.hazard.centroids.centr", level="INFO") as cm:
+            centr.write_hdf5(tmpfile)
+        self.assertEqual(2, len(cm.output))
+        self.assertIn(
+            "Skip writing Centroids.meta['nodata'] for it is None.", cm.output[1]
+        )
         Path(tmpfile).unlink()
 
 
@@ -238,7 +200,7 @@ class TestCentroidsMethods(unittest.TestCase):
         cent2 = Centroids(latitude=lat2, longitude=lon2, on_land=on_land2)
 
         lat3, lon3 = np.array([-1, -2]), np.array([1, 2])
-        cent3 = Centroids(latitude=lat3, longitude=lon3)
+        cent3 = Centroids(lat=lat3, lon=lon3)
 
         cent = cent1.union(cent2)
         np.testing.assert_array_equal(cent.lat, [0, 1, 2, 3])
@@ -264,27 +226,18 @@ class TestCentroidsMethods(unittest.TestCase):
         np.testing.assert_array_equal(cent.lat, [0, 1, 2, 3, -1, -2])
         np.testing.assert_array_equal(cent.lon, [0, -1, -2, 3, 1, 2])
 
-    def test_get_meta(self):
-        """
-        Test that the `get_meta` method correctly generates metadata
-        for a raster with a specified resolution.
-        """
-        # Create centroids with specified resolution
-        lon = np.array([-10.0, -20.0, -30.0])
-        lat = np.array([10.0, 20.0, 30.0])
-        centroids = Centroids(latitude=lat, longitude=lon, crs=DEF_CRS)
+    def test_union_meta(self):
+        cent1 = Centroids.from_pnt_bounds((-1, -1, 0, 0), res=1)
+        cent2 = Centroids.from_pnt_bounds((0, 0, 1, 1), res=1)
+        cent3 = Centroids.from_lat_lon(np.array([1]), np.array([1]))
 
-        # Get metadata
-        meta = centroids.get_meta()
+        cent = cent1.union(cent2)
+        np.testing.assert_array_equal(cent.lat, [0, 0, -1, -1, 1, 1, 0])
+        np.testing.assert_array_equal(cent.lon, [-1, 0, -1, 0, 0, 1, 1])
 
-        # Check metadata
-        expected_meta = dict(
-            crs=DEF_CRS, height=3, width=3, transform=Affine(10, 0, -35, 0, -10, 35)
-        )
-        self.assertEqual(meta["height"], expected_meta["height"])
-        self.assertEqual(meta["width"], expected_meta["width"])
-        self.assertTrue(u_coord.equal_crs(meta["crs"], expected_meta["crs"]))
-        self.assertTrue(meta["transform"].almost_equals(expected_meta["transform"]))
+        cent = cent3.union(cent1)
+        np.testing.assert_array_equal(cent.lat, [1, 0, 0, -1, -1])
+        np.testing.assert_array_equal(cent.lon, [1, -1, 0, -1, 0])
 
 
 # Execute Tests

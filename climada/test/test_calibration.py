@@ -31,11 +31,9 @@ from climada.util.constants import ENT_DEMO_TODAY
 import climada.hazard.test as hazard_test
 from climada.test import get_test_file
 
-HAZ_TEST_TC: Path = get_test_file("test_tc_florida")
-"""
-Hazard test file from Data API: Hurricanes from 1851 to 2011 over Florida with 100 centroids.
-Fraction is empty. Format: HDF5.
-"""
+HAZ_TEST_MAT = Path(hazard_test.__file__).parent.joinpath(
+    "data", "atl_prob_no_name.mat"
+)
 
 DATA_FOLDER = CONFIG.test_data.dir()
 
@@ -62,10 +60,10 @@ class TestCalib(unittest.TestCase):
 
         # create input frame
         df_in = pd.DataFrame.from_dict(
-            {"v_threshold": [25.7], "other_param": [2], "hazard": [HAZ_TEST_TC]}
+            {"v_threshold": [25.7], "other_param": [2], "hazard": [HAZ_TEST_MAT]}
         )
         df_in_yearly = pd.DataFrame.from_dict(
-            {"v_threshold": [25.7], "other_param": [2], "hazard": [HAZ_TEST_TC]}
+            {"v_threshold": [25.7], "other_param": [2], "hazard": [HAZ_TEST_MAT]}
         )
 
         # Compute the impact over the whole exposures

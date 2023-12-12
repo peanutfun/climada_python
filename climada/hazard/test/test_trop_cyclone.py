@@ -55,9 +55,7 @@ DATA_DIR = Path(hazard_test.__file__).parent.joinpath("data")
 TEST_TRACK = DATA_DIR.joinpath("trac_brb_test.csv")
 TEST_TRACK_SHORT = DATA_DIR.joinpath("trac_short_test.csv")
 
-CENTR_TEST_BRB = Centroids.from_hdf5(
-    Client().get_dataset_file(name="centr_test_brb", status="test_dataset")
-)
+CENTR_TEST_BRB = Centroids.from_mat(DATA_DIR.joinpath("centr_brb_test.mat"))
 
 
 class TestReader(unittest.TestCase):

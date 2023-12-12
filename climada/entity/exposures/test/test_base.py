@@ -70,6 +70,7 @@ class TestFuncs(unittest.TestCase):
         haz = Hazard.from_raster(
             [HAZ_DEMO_FL], haz_type="FL", window=Window(10, 20, 50, 60)
         )
+        haz.raster_to_vector()
         ncentroids = haz.centroids.size
 
         exp = Exposures(crs=haz.centroids.crs)
@@ -161,7 +162,7 @@ class TestFuncs(unittest.TestCase):
             "height": 10,
             "transform": rasterio.Affine(1.5, 0.0, -20, 0.0, -1.4, 8),
         }
-        haz = Hazard("FL", centroids=Centroids.from_meta(meta))
+        haz = Hazard("FL", centroids=Centroids(meta=meta))
 
         # explicit points with known results (see `expected_result` for details)
         exp = Exposures(crs=DEF_CRS)
@@ -219,14 +220,14 @@ class TestFuncs(unittest.TestCase):
 
         expected_result = [
             # constant y-value, varying x-value
-            0,
+            -1,
             0,
             0,
             0,
             0,
             1,
             # constant x-value, varying y-value
-            0,
+            -1,
             0,
             0,
             20,
@@ -271,16 +272,13 @@ class TestFuncs(unittest.TestCase):
         exp.gdf.longitude[[0, 1]] = exp.gdf.longitude[[1, 0]]
         exp.check()
         haz = Hazard.from_raster([HAZ_DEMO_FL], haz_type="FL")
+        haz.raster_to_vector()
         exp.assign_centroids(haz)
         assigned_centroids = haz.centroids.select(
             sel_cen=exp.gdf[INDICATOR_CENTR + "FL"].values
         )
-        np.testing.assert_array_equal(
-            np.unique(assigned_centroids.lat), np.unique(exp.gdf.latitude)
-        )
-        np.testing.assert_array_equal(
-            np.unique(assigned_centroids.lon), np.unique(exp.gdf.longitude)
-        )
+        np.testing.assert_array_equal(assigned_centroids.lat, exp.gdf.latitude)
+        np.testing.assert_array_equal(assigned_centroids.lon, exp.gdf.longitude)
 
     def test_affected_total_value(self):
         haz_type = "RF"

@@ -39,11 +39,7 @@ import climada.entity.exposures.test as exposures_test
 
 DATA_DIR = CONFIG.measures.test_data.dir()
 
-HAZ_TEST_TC: Path = get_test_file("test_tc_florida")
-"""
-Hazard test file from Data API: Hurricanes from 1851 to 2011 over Florida with 100 centroids.
-Fraction is empty. Format: HDF5.
-"""
+HAZ_TEST_MAT = Path(hazard_test.__file__).parent / "data" / "atl_prob_no_name.mat"
 ENT_TEST_MAT = Path(exposures_test.__file__).parent / "data" / "demo_today.mat"
 
 

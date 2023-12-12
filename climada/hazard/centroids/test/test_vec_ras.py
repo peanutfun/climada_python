@@ -36,19 +36,605 @@ import itertools
 
 DATA_DIR = CONFIG.hazard.test_data.dir()
 
-
-# Note: the coordinates are not directly on the cities, the region id and on land
-# otherwise do not work correctly. It is only a close point.
-LATLON = np.array(
+VEC_LON = np.array(
     [
-        [-21.1736, -175.1883],  # Tonga, Nuku'alofa, TON, 776
-        [-18.133, 178.433],  # Fidji, Suva, FJI, 242  IN WATER IN NATURAL EARTH
-        [-38.4689, 177.8642],  # New-Zealand, Te Karaka, NZL, 554
-        [69.6833, 18.95],  # Norway, Tromso, NOR, 578 IN WATER IN NATURAL EARTH
-        [78.84422, 20.82842],  # Norway, Svalbard, NOR, 578
-        [1, 1],  # Ocean, 0  (0,0 is onland in Natural earth for testing reasons)
-        [-77.85, 166.6778],  # Antarctica, McMurdo station, ATA, 010
-        [-0.25, -78.5833],  # Ecuador, Quito, ECU, 218
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.4583333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.1250000000000,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -60.0416666666667,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.9583333333333,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.8750000000000,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.7083333333333,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.6250000000000,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.5416666666667,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.4583333333333,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2916666666667,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.2083333333333,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.1250000000000,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -59.0416666666667,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -61.0416666666667,
+        -61.0416666666667,
+        -61.0416666666667,
+        -61.0416666666667,
+        -61.0416666666667,
+        -61.0416666666667,
+        -61.0416666666667,
+        -60.6250000000000,
+        -60.6250000000000,
+        -60.6250000000000,
+        -60.6250000000000,
+        -60.6250000000000,
+        -60.6250000000000,
+        -60.6250000000000,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -60.2083333333333,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.7916666666667,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -59.3750000000000,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.9583333333333,
+        -58.5416666666667,
+        -58.5416666666667,
+        -58.5416666666667,
+        -58.5416666666667,
+        -58.5416666666667,
+        -58.5416666666667,
+        -58.5416666666667,
+        -58.1250000000000,
+        -58.1250000000000,
+        -58.1250000000000,
+        -58.1250000000000,
+        -58.1250000000000,
+        -58.1250000000000,
+        -58.1250000000000,
+    ]
+)
+
+VEC_LAT = np.array(
+    [
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.125,
+        13.20833333,
+        13.125,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        13.79166667,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        13.70833333,
+        12.54166667,
+        12.625,
+        12.70833333,
+        12.79166667,
+        12.875,
+        12.95833333,
+        13.04166667,
+        13.125,
+        13.20833333,
+        13.29166667,
+        13.375,
+        13.45833333,
+        13.54166667,
+        13.625,
+        11.875,
+        12.29166667,
+        12.70833333,
+        13.125,
+        13.54166667,
+        13.95833333,
+        14.375,
+        11.875,
+        12.29166667,
+        12.70833333,
+        13.125,
+        13.54166667,
+        13.95833333,
+        14.375,
+        11.875,
+        12.29166667,
+        13.95833333,
+        14.375,
+        11.875,
+        12.29166667,
+        13.95833333,
+        14.375,
+        11.875,
+        12.29166667,
+        13.95833333,
+        14.375,
+        11.875,
+        12.29166667,
+        13.95833333,
+        14.375,
+        11.875,
+        12.29166667,
+        12.70833333,
+        13.125,
+        13.54166667,
+        13.95833333,
+        14.375,
+        11.875,
+        12.29166667,
+        12.70833333,
+        13.125,
+        13.54166667,
+        13.95833333,
+        14.375,
     ]
 )
 
@@ -60,6 +646,17 @@ REGION_ID = np.array([776, 0, 554, 0, 578, 0, 10, 218])
 
 TEST_CRS = "EPSG:4326"
 ALT_CRS = "epsg:32632"  # Europe
+
+def data_vector():
+    vec_data = gpd.GeoDataFrame(
+        {
+            "geometry": [Point(lon, lat) for lon, lat in zip(VEC_LON, VEC_LAT)],
+            "lon": VEC_LON,
+            "lat": VEC_LAT,
+        },
+        crs="epsg:32632",
+    )
+    return vec_data.lat.values, vec_data.lon.values, vec_data.geometry
 
 
 class TestVector(unittest.TestCase):
@@ -95,42 +692,52 @@ class TestVector(unittest.TestCase):
 
     def test_dist_coast_pass(self):
         """Test set_dist_coast"""
-        dist_coast = self.centr.get_dist_coast()
-        # Just checking that the output doesnt change over time.
-        REF_VALUES = np.array(
-            [
-                1605.243,
-                603.261,
-                26112.239,
-                2228.629,
-                7207.817,
-                156271.372,
-                661.114,
-                158184.4,
-            ]
-        )
-        np.testing.assert_array_almost_equal(dist_coast, REF_VALUES, decimal=3)
+        lat, lon, geometry = data_vector()
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+        centr.geometry.crs = "epsg:4326"
+        centr.set_dist_coast()
+        self.assertAlmostEqual(2594.2070842031694, centr.dist_coast[1])
+        self.assertAlmostEqual(166295.87602398323, centr.dist_coast[-2])
 
     def test_region_id_pass(self):
         """Test set_region_id"""
-        self.centr.set_region_id()
-        np.testing.assert_array_equal(self.centr.region_id, REGION_ID)
+        lat, lon, geometry = data_vector()
+        geometry.crs = "epsg:4326"
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+        centr.set_region_id()
+        self.assertEqual(np.count_nonzero(centr.region_id), 6)
+        self.assertEqual(centr.region_id[0], 52)  # 052 for barbados
 
     def test_on_land(self):
         """Test set_on_land"""
-        self.centr.set_on_land()
-        np.testing.assert_array_equal(self.centr.on_land, ON_LAND)
+        lat, lon, geometry = data_vector()
+        geometry.crs = "epsg:4326"
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+        centr.set_on_land()
+        centr.set_region_id()
+        centr.region_id[centr.region_id > 0] = 1
+        self.assertTrue(np.array_equal(centr.on_land.astype(int), centr.region_id))
 
     def test_remove_duplicate_pass(self):
         """Test remove_duplicate_points"""
-        centr = Centroids(
-            latitude=np.hstack([VEC_LAT, VEC_LAT]),
-            longitude=np.hstack([VEC_LON, VEC_LON]),
-            crs=TEST_CRS,
-        )
-        self.assertTrue(centr.gdf.shape[0] == 2 * self.centr.gdf.shape[0])
-        rem_centr = Centroids.remove_duplicate_points(centr)
-        self.assertTrue(self.centr == rem_centr)
+        lat, lon, geometry = data_vector()
+        geometry.crs = "epsg:4326"
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+        # create duplicates manually:
+        centr.geometry.values[100] = centr.geometry.values[101]
+        centr.geometry.values[120] = centr.geometry.values[101]
+        centr.geometry.values[5] = Point([-59.7, 12.5])
+        centr.geometry.values[133] = Point([-59.7, 12.5])
+        centr.geometry.values[121] = Point([-59.7, 12.5])
+        centr.lon = centr.geometry.apply(lambda pt: pt.x).values
+        centr.lat = centr.geometry.apply(lambda pt: pt.y).values
+        self.assertEqual(centr.size, 296)
+        rem_centr = centr.remove_duplicate_points()
+        self.assertEqual(centr.size, 296)
+        self.assertEqual(rem_centr.size, 292)
+        rem2_centr = rem_centr.remove_duplicate_points()
+        self.assertEqual(rem_centr.size, 292)
+        self.assertEqual(rem2_centr.size, 292)
 
     def test_area_pass(self):
         """Test set_area"""
@@ -150,19 +757,65 @@ class TestVector(unittest.TestCase):
             },
             crs={"proj": "cea"},
         )
-        centr = Centroids.from_geodataframe(vec_data)
-        area_pixel = centr.get_area_pixel()
-        self.assertTrue(np.allclose(area_pixel, np.ones(centr.size)))
+
+        centr = Centroids.from_lat_lon(vec_data.lat.values, vec_data.lon.values)
+        centr.geometry = vec_data.geometry
+        centr.set_area_pixel()
+        self.assertTrue(np.allclose(centr.area_pixel, np.ones(centr.size)))
+
+    def test_size_pass(self):
+        """Test size property"""
+        lat, lon, geometry = data_vector()
+        geometry.crs = "epsg:4326"
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+        self.assertEqual(centr.size, 296)
 
     def test_get_closest_point(self):
         """Test get_closest_point"""
-        for n, (lat, lon) in enumerate(LATLON):
-            x, y, idx = self.centr.get_closest_point(lon * 0.99, lat * 1.01)
-            self.assertAlmostEqual(x, lon)
-            self.assertAlmostEqual(y, lat)
-            self.assertEqual(idx, n)
-            self.assertEqual(self.centr.lon[n], x)
-            self.assertEqual(self.centr.lat[n], y)
+        lat, lon, geometry = data_vector()
+        geometry.crs = "epsg:4326"
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+        x, y, idx = centr.get_closest_point(-58.13, 14.38)
+        self.assertAlmostEqual(x, -58.125)
+        self.assertAlmostEqual(y, 14.375)
+        self.assertEqual(idx, 295)
+        self.assertEqual(centr.lon[idx], x)
+        self.assertEqual(centr.lat[idx], y)
+
+    def test_set_lat_lon_to_meta_pass(self):
+        """Test set_lat_lon_to_meta"""
+        lat, lon, geometry = data_vector()
+        geometry.crs = "epsg:4326"
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+
+        centr.set_lat_lon_to_meta()
+        self.assertTrue(u_coord.equal_crs(centr.meta["crs"], "epsg:4326"))
+        self.assertEqual(centr.meta["width"], 36)
+        self.assertEqual(centr.meta["height"], 31)
+        self.assertEqual(centr.meta["transform"][1], 0.0)
+        self.assertEqual(centr.meta["transform"][3], 0.0)
+        self.assertAlmostEqual(centr.meta["transform"][0], 0.08333333)
+        self.assertAlmostEqual(centr.meta["transform"][2], -61.08333333)
+        self.assertAlmostEqual(centr.meta["transform"][4], 0.08333333)
+        self.assertAlmostEqual(centr.meta["transform"][5], 11.83333333)
+
+    def test_get_pixel_polygons_pass(self):
+        """Test calc_pixels_polygons"""
+        lat, lon, geometry = data_vector()
+        geometry.crs = "epsg:4326"
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+        poly = centr.calc_pixels_polygons()
+        self.assertIsInstance(poly[0], Polygon)
+        self.assertTrue(np.allclose(poly.centroid[:].y.values, centr.lat))
+        self.assertTrue(np.allclose(poly.centroid[:].x.values, centr.lon))
+
+    def test_area_approx(self):
+        """Test set_area_approx"""
+        lat, lon, geometry = data_vector()
+        geometry.crs = "epsg:4326"
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+        with self.assertRaises(ValueError):
+            centr.set_area_approx()
 
     def test_append_pass(self):
         """Append points"""
@@ -171,8 +824,8 @@ class TestVector(unittest.TestCase):
             latitude=np.array([1, 2, 3]), longitude=np.array([4, 5, 6]), crs=DEF_CRS
         )
         with self.assertRaises(ValueError):
-            # Different crs
-            centr_bis.to_crs(ALT_CRS).append(centr)
+            centr_bis.append(centr)
+        centr.geometry.crs = "epsg:4326"
         centr_bis.append(centr)
         self.assertAlmostEqual(centr_bis.lat[0], 1)
         self.assertAlmostEqual(centr_bis.lat[1], 2)
@@ -200,22 +853,67 @@ class TestVector(unittest.TestCase):
 class TestRaster(unittest.TestCase):
     """Test CentroidsRaster class"""
 
+    def test_from_pix_bounds_pass(self):
+        """Test from_pix_bounds"""
+        xf_lat, xo_lon, d_lat, d_lon, n_lat, n_lon = 10, 5, -0.5, 0.2, 20, 25
+        centr = Centroids.from_pix_bounds(xf_lat, xo_lon, d_lat, d_lon, n_lat, n_lon)
+        self.assertTrue(u_coord.equal_crs(centr.meta["crs"], DEF_CRS))
+        self.assertEqual(centr.meta["width"], n_lon)
+        self.assertEqual(centr.meta["height"], n_lat)
+        self.assertAlmostEqual(centr.meta["transform"][0], d_lon)
+        self.assertAlmostEqual(centr.meta["transform"][1], 0.0)
+        self.assertAlmostEqual(centr.meta["transform"][2], xo_lon)
+        self.assertAlmostEqual(centr.meta["transform"][3], 0.0)
+        self.assertAlmostEqual(centr.meta["transform"][4], d_lat)
+        self.assertAlmostEqual(centr.meta["transform"][5], xf_lat)
+        self.assertTrue("lat" in centr.__dict__.keys())
+        self.assertTrue("lon" in centr.__dict__.keys())
+
     def test_from_pnt_bounds_pass(self):
         """Test from_pnt_bounds"""
         left, bottom, right, top = 5, 0, 10, 10
-        centr = Centroids.from_pnt_bounds((left, bottom, right, top), 0.2, crs=DEF_CRS)
-        self.assertTrue(u_coord.equal_crs(centr.crs, DEF_CRS))
+        centr = Centroids.from_pnt_bounds((left, bottom, right, top), 0.2)
+        self.assertTrue(u_coord.equal_crs(centr.meta["crs"], DEF_CRS))
+        self.assertEqual(centr.meta["width"], 26)
+        self.assertEqual(centr.meta["height"], 51)
+        self.assertAlmostEqual(centr.meta["transform"][0], 0.2)
+        self.assertAlmostEqual(centr.meta["transform"][1], 0.0)
+        self.assertAlmostEqual(centr.meta["transform"][2], 5 - 0.2 / 2)
+        self.assertAlmostEqual(centr.meta["transform"][3], 0.0)
+        self.assertAlmostEqual(centr.meta["transform"][4], -0.2)
+        self.assertAlmostEqual(centr.meta["transform"][5], 10 + 0.2 / 2)
+        self.assertTrue("lat" in centr.__dict__.keys())
+        self.assertTrue("lon" in centr.__dict__.keys())
 
     def test_read_all_pass(self):
         """Test centr_ras data"""
         centr_ras = Centroids.from_raster_file(HAZ_DEMO_FL, window=Window(0, 0, 50, 60))
-        self.assertTrue(u_coord.equal_crs(centr_ras.crs, DEF_CRS))
+        self.assertAlmostEqual(centr_ras.meta["crs"], DEF_CRS)
+        self.assertAlmostEqual(centr_ras.meta["transform"].c, -69.33714959699981)
+        self.assertAlmostEqual(centr_ras.meta["transform"].a, 0.009000000000000341)
+        self.assertAlmostEqual(centr_ras.meta["transform"].b, 0.0)
+        self.assertAlmostEqual(centr_ras.meta["transform"].f, 10.42822096697894)
+        self.assertAlmostEqual(centr_ras.meta["transform"].d, 0.0)
+        self.assertAlmostEqual(centr_ras.meta["transform"].e, -0.009000000000000341)
+        self.assertEqual(centr_ras.meta["height"], 60)
+        self.assertEqual(centr_ras.meta["width"], 50)
+
+        inten_ras = centr_ras.values_from_raster_files(
+            [HAZ_DEMO_FL], window=Window(0, 0, 50, 60)
+        )
+        self.assertEqual(inten_ras.shape, (1, 60 * 50))
 
     def test_ne_crs_geom_pass(self):
         """Test _ne_crs_geom"""
-        centr = Centroids(latitude=VEC_LAT, longitude=VEC_LON, crs=ALT_CRS)
-        ne_geom = centr._ne_crs_geom()
-        self.assertTrue(u_coord.equal_crs(ne_geom.crs, u_coord.NE_CRS))
+        centr_ras = Centroids.from_raster_file(HAZ_DEMO_FL, window=Window(0, 0, 50, 60))
+        centr_ras.meta["crs"] = "epsg:32632"
+
+        xy_vec = centr_ras._ne_crs_geom()
+        x_vec, y_vec = xy_vec.geometry[:].x.values, xy_vec.geometry[:].y.values
+        self.assertAlmostEqual(4.51063496489, x_vec[0])
+        self.assertAlmostEqual(9.40153761711e-05, y_vec[0])
+        self.assertAlmostEqual(4.51063891581, x_vec[-1])
+        self.assertAlmostEqual(8.92260922066e-05, y_vec[-1])
 
     def test_region_id_pass(self):
         """Test set_dist_coast"""
@@ -248,29 +946,36 @@ class TestRaster(unittest.TestCase):
 
     def test_area_pass(self):
         """Test set_area"""
-        window_size = (0, 0, 2, 3)
-        centr_ras = Centroids.from_raster_file(HAZ_DEMO_FL, window=Window(*window_size))
-        area_pixel = centr_ras.get_area_pixel()
-
-        # Result in the crs of the test file (ESPG:4326)
-        # This is a wrong result as it should be projected to CEA (for correct area)
-        res = 0.009000000000000341
-        self.assertFalse(
-            np.allclose(area_pixel, np.ones(window_size[2] * window_size[3]) * res**2)
+        centr_ras = Centroids.from_raster_file(HAZ_DEMO_FL, window=Window(0, 0, 50, 60))
+        centr_ras.meta["crs"] = {"proj": "cea"}
+        centr_ras.set_area_pixel()
+        centr_ras.check()
+        self.assertTrue(
+            np.allclose(
+                centr_ras.area_pixel,
+                np.ones(60 * 50) * 0.009000000000000341 * 0.009000000000000341,
+            )
         )
 
-        # Correct result in CEA results in unequal pixel area
-        test_area = np.array(
-            [
-                981010.32497514,
-                981010.3249724,
-                981037.92674855,
-                981037.92674582,
-                981065.50487659,
-                981065.50487385,
-            ]
+    def test_area_approx(self):
+        """Test set_area_approx"""
+        centr_ras = Centroids.from_raster_file(HAZ_DEMO_FL, window=Window(0, 0, 50, 60))
+        centr_ras.set_area_approx()
+        approx_dim = (
+            centr_ras.meta["transform"][0]
+            * 111
+            * 1000
+            * centr_ras.meta["transform"][0]
+            * 111
+            * 1000
         )
-        self.assertTrue(np.allclose(area_pixel, test_area))
+        self.assertEqual(centr_ras.area_pixel.size, centr_ras.size)
+        self.assertEqual(np.unique(centr_ras.area_pixel).size, 60)
+        self.assertTrue(
+            np.array_equal(
+                (approx_dim / np.unique(centr_ras.area_pixel)).astype(int), np.ones(60)
+            )
+        )
 
     def test_size_pass(self):
         """Test size property"""
@@ -308,8 +1013,8 @@ class TestRaster(unittest.TestCase):
                 self.assertEqual(centr_ras.lon[idx], x)
                 self.assertEqual(centr_ras.lat[idx], y)
 
-        centr_ras = Centroids(
-            latitude=np.array([0, 0.2, 0.7]), longitude=np.array([-0.4, 0.2, 1.1])
+        centr_ras = Centroids.from_lat_lon(
+            np.array([0, 0.2, 0.7]), np.array([-0.4, 0.2, 1.1])
         )
         x, y, idx = centr_ras.get_closest_point(0.1, 0.0)
         self.assertEqual(x, 0.2)
@@ -318,7 +1023,36 @@ class TestRaster(unittest.TestCase):
 
     def test_set_meta_to_lat_lon_pass(self):
         """Test set_meta_to_lat_lon by using its inverse set_lat_lon_to_meta"""
-        pass
+        lat, lon, geometry = data_vector()
+
+        centr = Centroids(lat=lat, lon=lon, geometry=geometry)
+
+        centr.set_lat_lon_to_meta()
+        meta = centr.meta
+        centr.set_meta_to_lat_lon()
+        self.assertEqual(centr.meta, meta)
+        self.assertAlmostEqual(lat.max(), centr.lat.max(), 6)
+        self.assertAlmostEqual(lat.min(), centr.lat.min(), 6)
+        self.assertAlmostEqual(lon.max(), centr.lon.max(), 6)
+        self.assertAlmostEqual(lon.min(), centr.lon.min(), 6)
+        self.assertAlmostEqual(np.diff(centr.lon).max(), meta["transform"][0])
+        self.assertAlmostEqual(np.diff(centr.lat).max(), meta["transform"][4])
+        self.assertTrue(u_coord.equal_crs(geometry.crs, centr.geometry.crs))
+
+    def test_append_equal_pass(self):
+        """Append raster"""
+        centr_ras = Centroids.from_raster_file(HAZ_DEMO_FL, window=Window(0, 0, 50, 60))
+        centr_bis = Centroids.from_raster_file(HAZ_DEMO_FL, window=Window(0, 0, 50, 60))
+        centr_bis.append(centr_ras)
+        self.assertAlmostEqual(centr_bis.meta["crs"], DEF_CRS)
+        self.assertAlmostEqual(centr_bis.meta["transform"].c, -69.33714959699981)
+        self.assertAlmostEqual(centr_bis.meta["transform"].a, 0.009000000000000341)
+        self.assertAlmostEqual(centr_bis.meta["transform"].b, 0.0)
+        self.assertAlmostEqual(centr_bis.meta["transform"].f, 10.42822096697894)
+        self.assertAlmostEqual(centr_bis.meta["transform"].d, 0.0)
+        self.assertAlmostEqual(centr_bis.meta["transform"].e, -0.009000000000000341)
+        self.assertEqual(centr_bis.meta["height"], 60)
+        self.assertEqual(centr_bis.meta["width"], 50)
 
     def test_equal_pass(self):
         """Test equal"""
@@ -326,9 +1060,10 @@ class TestRaster(unittest.TestCase):
         centr_bis = Centroids.from_raster_file(
             HAZ_DEMO_FL, window=Window(51, 61, 10, 10)
         )
-        self.assertFalse(centr_ras == centr_bis)
-        self.assertTrue(centr_ras == centr_ras)
-        self.assertTrue(centr_bis == centr_bis)
+        self.assertFalse(centr_ras.equal(centr_bis))
+        self.assertFalse(centr_bis.equal(centr_ras))
+        self.assertTrue(centr_ras.equal(centr_ras))
+        self.assertTrue(centr_bis.equal(centr_bis))
 
 
 class TestCentroids(unittest.TestCase):
@@ -354,17 +1089,63 @@ class TestCentroids(unittest.TestCase):
         )
         self.assertEqual(centr.size, VEC_LON.size)
 
+        centr.area_pixel = np.array([1])
+        with self.assertRaises(ValueError):
+            centr.check()
+
+        centr.area_pixel = np.array([])
+        centr.dist_coast = np.array([1])
+        with self.assertRaises(ValueError):
+            centr.check()
+
+        centr.dist_coast = np.array([])
+        centr.on_land = np.array([1])
+        with self.assertRaises(ValueError):
+            centr.check()
+
+        centr.on_land = np.array([])
+        centr.region_id = np.array([1])
+        with self.assertRaises(ValueError):
+            centr.check()
+
+        centr.region_id = np.array([])
+        centr.lat = np.array([1])
+        with self.assertRaises(ValueError):
+            centr.check()
+
+        centr.lat = np.array([])
+        centr.lon = np.array([1])
+        with self.assertRaises(ValueError):
+            centr.check()
+
+        centr.lon = np.array([])
+        centr.geometry = gpd.GeoSeries(Point(0, 0))
+        with self.assertRaises(ValueError) as raised:
+            centr.check()
+        self.assertEqual(str(raised.exception), "Wrong geometry size: 0 != 1.")
+
+        meta = {
+            "width": 10,
+            "height": 20,
+            "transform": rasterio.Affine(0.1, 0, 0, 0, 0.1, 0),
+            "crs": DEF_CRS,
+        }
+        cen = Centroids(meta=meta)
+        with self.assertRaises(ValueError):
+            cen.check()
+
 
 class TestReader(unittest.TestCase):
     """Test Centroids setter vector and raster methods"""
-
-    def setUp(self):
-        self.centr = Centroids(latitude=VEC_LAT, longitude=VEC_LON, crs=TEST_CRS)
 
     def test_from_vector_file(self):
         """Test from_vector_file and values_from_vector_files"""
         shp_file = shapereader.natural_earth(
             resolution="110m", category="cultural", name="populated_places_simple"
+        )
+        centr = Centroids.from_vector_file(shp_file)
+        inten = centr.values_from_vector_files(
+            [shp_file], val_names=["pop_min", "pop_max"]
         )
 
         centr = Centroids.from_vector_file(shp_file, dst_crs=DEF_CRS)
@@ -377,12 +1158,85 @@ class TestReader(unittest.TestCase):
         centr = Centroids.from_vector_file(shp_file, dst_crs=ALT_CRS)
         self.assertTrue(u_coord.equal_crs(centr.crs, ALT_CRS))
 
-    def test_write_read_h5(self):
+        # Test reading values from file with incompatible geometry
+        shp_file = shapereader.natural_earth(
+            resolution="10m", category="cultural", name="populated_places_simple"
+        )
+        with self.assertRaises(ValueError) as cm:
+            centr.values_from_vector_files([shp_file], val_names=["pop_min", "pop_max"])
+        self.assertIn(
+            "Vector data inconsistent with contained vector", str(cm.exception)
+        )
+
+    def test_from_raster_file_wrong_fail(self):
+        """Test from_raster_file with wrong centroids"""
+        centr = Centroids.from_raster_file(HAZ_DEMO_FL, window=Window(10, 20, 50, 60))
+        self.assertAlmostEqual(centr.meta["crs"], DEF_CRS)
+        self.assertAlmostEqual(centr.meta["transform"].c, -69.2471495969998)
+        self.assertAlmostEqual(centr.meta["transform"].a, 0.009000000000000341)
+        self.assertAlmostEqual(centr.meta["transform"].b, 0.0)
+        self.assertAlmostEqual(centr.meta["transform"].f, 10.248220966978932)
+        self.assertAlmostEqual(centr.meta["transform"].d, 0.0)
+        self.assertAlmostEqual(centr.meta["transform"].e, -0.009000000000000341)
+        self.assertEqual(centr.meta["height"], 60)
+        self.assertEqual(centr.meta["width"], 50)
+
+        inten_ras = centr.values_from_raster_files(
+            [HAZ_DEMO_FL], window=Window(10, 20, 50, 60)
+        )
+        self.assertEqual(inten_ras.shape, (1, 60 * 50))
+        self.assertAlmostEqual(inten_ras.reshape((60, 50)).tocsr()[25, 12], 0.056825936)
+
+        with self.assertRaises(ValueError):
+            centr.values_from_raster_files([HAZ_DEMO_FL], window=Window(10, 20, 52, 60))
+
+    def test_write_read_raster_h5(self):
         """Write and read hdf5 format"""
         file_name = str(DATA_DIR.joinpath("test_centr.h5"))
-        self.centr.write_hdf5(file_name)
+
+        xf_lat, xo_lon, d_lat, d_lon, n_lat, n_lon = 10, 5, -0.5, 0.2, 20, 25
+        centr = Centroids.from_pix_bounds(xf_lat, xo_lon, d_lat, d_lon, n_lat, n_lon)
+        centr.write_hdf5(file_name)
+
         centr_read = Centroids.from_hdf5(file_name)
-        self.assertEqual(self.centr, centr_read)
+        self.assertTrue(centr_read.meta)
+        self.assertFalse(centr_read.lat.size)
+        self.assertFalse(centr_read.lon.size)
+        self.assertEqual(centr_read.meta["width"], centr.meta["width"])
+        self.assertEqual(centr_read.meta["height"], centr.meta["height"])
+        self.assertAlmostEqual(
+            centr_read.meta["transform"].a, centr.meta["transform"].a
+        )
+        self.assertAlmostEqual(
+            centr_read.meta["transform"].b, centr.meta["transform"].b
+        )
+        self.assertAlmostEqual(
+            centr_read.meta["transform"].c, centr.meta["transform"].c
+        )
+        self.assertAlmostEqual(
+            centr_read.meta["transform"].d, centr.meta["transform"].d
+        )
+        self.assertAlmostEqual(
+            centr_read.meta["transform"].e, centr.meta["transform"].e
+        )
+        self.assertAlmostEqual(
+            centr_read.meta["transform"].f, centr.meta["transform"].f
+        )
+        self.assertTrue(u_coord.equal_crs(centr_read.meta["crs"], centr.meta["crs"]))
+
+    def test_write_read_points_h5(self):
+        file_name = str(DATA_DIR.joinpath("test_centr.h5"))
+
+        centr = Centroids.from_lat_lon(VEC_LAT, VEC_LON)
+        centr.write_hdf5(file_name)
+
+        centr_read = Centroids.from_hdf5(file_name)
+        self.assertFalse(centr_read.meta)
+        self.assertTrue(centr_read.lat.size)
+        self.assertTrue(centr_read.lon.size)
+        self.assertTrue(np.allclose(centr_read.lat, centr.lat))
+        self.assertTrue(np.allclose(centr_read.lon, centr.lon))
+        self.assertTrue(u_coord.equal_crs(centr_read.crs, centr.crs))
 
 
 class TestCentroidsFuncs(unittest.TestCase):
@@ -404,11 +1258,11 @@ class TestCentroidsFuncs(unittest.TestCase):
 
     def test_select_extent_pass(self):
         """Test select extent"""
-        centr = Centroids(
-            latitude=np.array([-5, -3, 0, 3, 5]),
-            longitude=np.array([-180, -175, -170, 170, 175]),
-            region_id=np.zeros(5),
+        centr = Centroids.from_lat_lon(
+            np.array([-5, -3, 0, 3, 5]), np.array([-180, -175, -170, 170, 175])
         )
+        centr.check()
+        centr.region_id = np.zeros(len(centr.lat))
         ext_centr = centr.select(extent=[-175, -170, -5, 5])
         np.testing.assert_array_equal(ext_centr.lon, np.array([-175, -170]))
         np.testing.assert_array_equal(ext_centr.lat, np.array([-3, 0]))

@@ -802,6 +802,7 @@ def nat_earth_resolution(resolution):
     return str(resolution) + "m"
 
 
+
 def get_country_geometries(
     country_names=None, extent=None, resolution=10, center_crs=True
 ):
@@ -1221,12 +1222,21 @@ def match_centroids(
         # no error is raised and it is assumed that the user set the crs correctly
         pass
 
-    assigned = match_coordinates(
-        np.stack([coord_gdf.latitude.values, coord_gdf.longitude.values], axis=1),
-        centroids.coord,
-        distance=distance,
-        threshold=threshold,
-    )
+    if centroids.meta:
+        assigned = match_grid_points(
+            coord_gdf.longitude.values,
+            coord_gdf.latitude.values,
+            centroids.meta["width"],
+            centroids.meta["height"],
+            centroids.meta["transform"],
+        )
+    else:
+        assigned = match_coordinates(
+            np.stack([coord_gdf.latitude.values, coord_gdf.longitude.values], axis=1),
+            centroids.coord,
+            distance=distance,
+            threshold=threshold,
+        )
     return assigned
 
 
