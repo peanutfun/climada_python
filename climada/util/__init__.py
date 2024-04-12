@@ -18,6 +18,7 @@ with CLIMADA. If not, see <https://www.gnu.org/licenses/>.
 
 init util
 """
+
 import logging
 from pint import UnitRegistry
 
@@ -27,6 +28,7 @@ from .coordinates import *
 from .save import *
 
 ureg = UnitRegistry()
+
 
 class log_level:
     """Context manager that sets all loggers with names starting with
@@ -50,7 +52,7 @@ class log_level:
             name: (logger, logger.level)
             for name, logger in logging.root.manager.loggerDict.items()
             if isinstance(logger, logging.Logger) and name.startswith(name_prefix)
-            }
+        }
         if name_prefix == "":
             self.loggers[""] = (logging.getLogger(), logging.getLogger().level)
 

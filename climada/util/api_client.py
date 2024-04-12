@@ -18,6 +18,7 @@ with CLIMADA. If not, see <https://www.gnu.org/licenses/>.
 
 Data API client
 """
+
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib
