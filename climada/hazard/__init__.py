@@ -18,6 +18,7 @@ with CLIMADA. If not, see <https://www.gnu.org/licenses/>.
 
 init hazard
 """
+
 from .centroids import *
 from .base import *
 from .trop_cyclone import *

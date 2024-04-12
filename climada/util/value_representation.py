@@ -29,16 +29,10 @@ import numpy as np
 
 LOGGER = logging.getLogger(__name__)
 
-ABBREV = {
-    1:'',
-    1000: 'K',
-    1000000: 'M',
-    1000000000: 'Bn',
-    1000000000000: 'Tn'
-    }
+ABBREV = {1: "", 1000: "K", 1000000: "M", 1000000000: "Bn", 1000000000000: "Tn"}
 
 
-def sig_dig(x, n_sig_dig = 16):
+def sig_dig(x, n_sig_dig=16):
     """
     Rounds x to n_sig_dig number of significant digits.
     0, inf, Nan are returned unchanged.
@@ -66,8 +60,9 @@ def sig_dig(x, n_sig_dig = 16):
     if n_sig_dig >= num_of_digits:
         return x
     n = math.floor(math.log10(abs(x)) + 1 - n_sig_dig)
-    result = decimal.Decimal(str(np.round(x * 10**(-n)))) \
-              * decimal.Decimal(str(10**n))
+    result = decimal.Decimal(str(np.round(x * 10 ** (-n)))) * decimal.Decimal(
+        str(10**n)
+    )
     return float(result)
 
 
@@ -91,6 +86,7 @@ def sig_dig_list(iterable, n_sig_dig=16):
 
     """
     return np.vectorize(sig_dig)(iterable, n_sig_dig)
+
 
 def convert_monetary_value(values, abbrev, n_sig_dig=None):
 
@@ -150,27 +146,30 @@ def value_to_monetary_unit(values, n_sig_dig=None, abbreviations=None):
         values = [values]
 
     if abbreviations is None:
-        abbreviations= ABBREV
+        abbreviations = ABBREV
 
     exponents = []
     for val in values:
         if math.isclose(val, 0) or not math.isfinite(val):
             continue
         exponents.append(math.log10(abs(val)))
-    if not exponents: exponents = [0]
+    if not exponents:
+        exponents = [0]
     max_exp = max(exponents)
     min_exp = min(exponents)
 
     avg_exp = math.floor((max_exp + min_exp) / 2)  # rounded down
-    mil_exp = 3 * math.floor(avg_exp/3)
+    mil_exp = 3 * math.floor(avg_exp / 3)
 
-    thsder = int(10**mil_exp) #Remove negative exponents
+    thsder = int(10**mil_exp)  # Remove negative exponents
     thsder = 1 if thsder < 1 else thsder
 
     try:
         name = abbreviations[thsder]
     except KeyError:
-        LOGGER.warning("Warning: The numbers are larger than %s", list(abbreviations.keys())[-1])
+        LOGGER.warning(
+            "Warning: The numbers are larger than %s", list(abbreviations.keys())[-1]
+        )
         thsder, name = list(abbreviations.items())[-1]
 
     mon_val = np.array(values) / thsder

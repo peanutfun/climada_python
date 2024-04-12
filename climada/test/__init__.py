@@ -42,10 +42,16 @@ def get_test_file(ds_name, file_format=None):
         the path to the downloaded file
     """
     client = Client()
-    test_ds = client.get_dataset_info(name=ds_name, status='test_dataset')
+    test_ds = client.get_dataset_info(name=ds_name, status="test_dataset")
     _, files = client.download_dataset(test_ds)
-    [test_file] = [fil for fil in files if fil.name in [
-        dsf.file_name 
-        for dsf in test_ds.files 
-        if file_format is None or dsf.file_format == file_format]]
+    [test_file] = [
+        fil
+        for fil in files
+        if fil.name
+        in [
+            dsf.file_name
+            for dsf in test_ds.files
+            if file_format is None or dsf.file_format == file_format
+        ]
+    ]
     return test_file

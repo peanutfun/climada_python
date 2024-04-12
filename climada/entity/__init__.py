@@ -18,6 +18,7 @@ with CLIMADA. If not, see <https://www.gnu.org/licenses/>.
 
 init entity
 """
+
 from .exposures import *
 from .impact_funcs import *
 from .disc_rates import *
